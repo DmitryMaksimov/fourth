@@ -1,0 +1,26 @@
+html
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(http-equiv="X-UA-Compatible", content="ie=edge")
+    title Отельные взгляды на слайдер
+
+    link(rel="stylesheet", href="SCSS/reset.css")
+    link(rel="stylesheet", href="/SCSS/style.scss")
+
+    //- в chai есть много всего, выносим assert в глобальную область
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/mocha/2.1.0/mocha.js")
+    script.
+      mocha.setup('bdd');
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/chai/2.0.0/chai.js")
+
+    script(type="text/javascript" src='/Items/slider.js')
+    script(type="text/javascript" src='/tests.js')
+
+
+
+  body
+    content
+      div.super_slider
+      div#mocha
+      script mocha.run()
