@@ -1,9 +1,11 @@
 {
   "devDependencies": {
-    "pug": "^3.0.0"
+    "pug": "^3.0.0",
+    "sass": "^1.30.0"
   },
   "dependencies": {
     "jquery": "^3.5.1",
-    "jquery-ui-dist": "^1.12.1"
+    "jquery-ui-dist": "^1.12.1",
+    "parcel": "^1.12.4"
   }
 }
