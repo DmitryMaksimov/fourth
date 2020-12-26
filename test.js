@@ -11,6 +11,9 @@ describe("Slider_Model", function() {
       it("val2 null", function() {
         assert.equal( model.Value2, null);
       })
+      it("range = 2", function() {
+        assert.equal( model.Range, 2);
+      })
     });
 
     describe("CreateModel(1,3,4,5).SetMinMax(2, 2)", function() {

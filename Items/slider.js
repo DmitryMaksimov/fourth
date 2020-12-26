@@ -16,11 +16,15 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
       (Value2 != null && isNaN(Value2)))
     throw new Error("Давай нормальные данные");
 
+  if(Value1 == null && Value2 == null)
+    Value1 = (minimumValue + maximumValue) / 2;
+    
   var result = {
     _min: minimumValue,
     _max: maximumValue,
     _val1: null,
     _val2: null,
+    salt: Math.random(),
     setMinMax: function (minimumValue, maximumValue) { 
       if(isNaN(minimumValue) || isNaN(maximumValue) || minimumValue > maximumValue)
         throw new Error("Давай нормальные данные");
@@ -88,33 +92,70 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
       $(this).trigger("changed");
     }
   });
+  Object.defineProperty(result, "Range", {
+    get: function() { return this._max - this._min; },
+  });
 
   result.Value1 = Value1;
   result.Value2 = Value2;
 
-  return result;
+  return Object.create(result);
+}
+
+function Slider_GetRange(element) {
+  var left = element.find(".double_slider__left");
+  var right = element.find(".double_slider__right");
+
+  var Range = element.width();// Расчет доступного пространства для перемещения ползунков
+
+  if(left.width() != null)
+    Range -= left.width(); // Исключаем ширину самих ползунков если они есть
+  if(right.width() != null)
+    Range -= right.width();// Исключаем ширину самих ползунков если они есть
+
+  return Range;
 }
 
 /* CONTROLLER in MVC */
 export function Slider_Controller(element) {
-  var dragging = false;
+  var dragging = 0;// 0 не таскаем, -1 таскаем левый, 1 таскаем правый
   var StartPointX, StartPointY;
+  var OldValue;
 
   element = $(element);
-  var e = element.find(".double_slider__left");
-  e.on("mousedown", function (e) {
-    dragging = true;
+  var model = element.prop("model");
+
+  var left = element.find(".double_slider__left");
+  var right = element.find(".double_slider__right");
+
+  var Range = Slider_GetRange(element);
+
+  left.on("mousedown", function (e) {
+    dragging = -1;
     StartPointX = e.pageX;
     StartPointY = e.pageY;
+    OldValue = model.Value1;//Фиксируем начальные значения и координаты для перетакивания левого ползунка
+  });
+  right.on("mousedown", function (e) {
+    dragging = 1;
+    StartPointX = e.pageX;
+    StartPointY = e.pageY;
+    OldValue = model.Value2;//Фиксируем начальные значения и координаты для перетакивания правого ползунка
   });
   $(window).on("mousemove", function (e) {
     if(!dragging)
       return;
-    var DeltaX = StartPointX - e.pageX;
-    var DeltaY = StartPointY - e.pageY;
+    var DeltaX = e.pageX - StartPointX;
+    //var DeltaY = e.pageY - StartPointY;
+    if(dragging < 0) { //Перетаскивание левого
+      model.Value1 = OldValue + DeltaX / Range;
+    }
+    if(dragging > 0) { //Перетаскивание правого
+      model.Value2 = OldValue + DeltaX / Range;
+    }
   });
   $(window).on("mouseup", function (e) {
-    dragging = false;
+    dragging = 0;
   });
 }
 
@@ -133,15 +174,36 @@ export function Slider_Attach(element) {
         "<div class='double_slider__right'></div>": "") +
       "</div></div>";
   element.html(html);
+
+
+  //Перемещение ползунков при изменении модели
+  $(model).on("changed", function () {
+    var left = element.find(".double_slider__left");
+    var middle = element.find(".double_slider__middle");
+
+    var Range = Slider_GetRange(element);
+
+    var left_margin = Range * model.Value1 / model.Range;
+
+    var right_margin = model.Value2;
+    if(model.Value1 != null)
+      right_margin -= model.Value1;
+
+    right_margin *= Range / model.Range;
+
+    left.css("margin-left", left_margin + "px");
+    middle.css("width", right_margin + "px");
+//    left.animate({"margin-left": left_margin}, { duration: 'fast', queue: false });
+//    middle.animate({"width": right_margin}, { duration: 'fast', queue: false });
+  })
+
   Slider_Controller(element);
 }
 
-export function Slider(minimumValue, maximumValue, Value1 = null, Value2 = null) {
-  if(Value1 == null && Value2 == null)
-    Value1 = (minimumValue + maximumValue) / 2;
+export function Slider(model) {
+  if(model == null)
+    model = Slider_CreateModel(0, 1, 0, 1);
 
-
-  var model = Slider_CreateModel(minimumValue, maximumValue, Value1, Value2);
   $(this).each(function () {
     $(this).prop("model", model);
     $(this).prop("config", {
@@ -154,4 +216,5 @@ export function Slider(minimumValue, maximumValue, Value1 = null, Value2 = null)
 }
 
 $.fn.mySlider = Slider;
+$.fn.mySliderModel = Slider_CreateModel;
 
