@@ -5,76 +5,149 @@ if( window.$ == null) {
   require("jquery-ui-dist/jquery-ui.js");
 }
 
+/* MODEL in MVC*/
+
+//Создание модели + создание событий при изменении модели
 export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Value2 = null) {
   if( isNaN(minimumValue) ||
       isNaN(maximumValue) ||
+      minimumValue > maximumValue ||
       (Value1 != null && isNaN(Value1)) ||
       (Value2 != null && isNaN(Value2)))
     throw new Error("Давай нормальные данные");
 
-  if(minimumValue > maximumValue) {
-    var m = minimumValue;
-    minimumValue = maximumValue;
-    maximumValue = m;
-  }
-    
-  if(Value1 != null && (minimumValue > Value1 || maximumValue < Value1))
-    Value1 = minimumValue;
-
-  if(Value2 != null && (minimumValue > Value2 || maximumValue < Value2))
-    Value2 = maximumValue;
-
-  if(Value1 == null && Value2 == null)
-    Value2 = maximumValue;
-
   var result = {
     _min: minimumValue,
     _max: maximumValue,
-    _val1: Value1,
-    _val2: Value2,
+    _val1: null,
+    _val2: null,
     setMinMax: function (minimumValue, maximumValue) { 
-      if(isNaN(minimumValue) || isNaN(maximumValue))
+      if(isNaN(minimumValue) || isNaN(maximumValue) || minimumValue > maximumValue)
         throw new Error("Давай нормальные данные");
-      if(minimumValue < maximumValue) {
-        this._min = minimumValue;
-        this._max = maximumValue;
-      } else {
-        this._min = maximumValue;
-        this._max = minimumValue;
+      this._min = minimumValue;
+      this._max = maximumValue;
+
+      if(this._val1 != null) {
+        if(this._val1 < minimumValue)
+          this._val1 = minimumValue;
+        if(this._val1 > maximumValue)
+          this._val1 = maximumValue;
       }
+
+      if(this._val2 != null) {
+        if(this._val2 < minimumValue)
+          this._val2 = minimumValue;
+        if(this._val2 > maximumValue)
+          this._val2 = maximumValue;
+      }
+
+      $(this).trigger("changed");
+
+      return this;
     }
   };
 
-  result.setMinMax(1,2);
-
-  Object.defineProperty(result, "min", {
-    get: function() { return _min; },
+  Object.defineProperty(result, "Value1", {
+    get: function() { return this._val1; },
     set: function(value) {
-      if(value)
-      _min = value;
+      if(value == null) {
+        this._val1 = null;
+        $(this).trigger("changed");
+        return;
+      }
+      if(isNaN(value))
+        throw new Error("Цифры давай! Модель требует циферки!");
+      if(this._val2 != null && value > this._val2)
+        value = this._val2;
+      if(value > this._max)
+        value = this._max;
+      if(value < this._min)
+        value = this._min;
+      this._val1 = value;
+      $(this).trigger("changed");
     }
   });
+  Object.defineProperty(result, "Value2", {
+    get: function() { return this._val2; },
+    set: function(value) {
+      if(value == null) {
+        this._val2 = null;
+        $(this).trigger("changed");
+        return;
+      }
+
+      if(isNaN(value))
+        throw new Error("Цифры давай! Модель требует циферки!");
+      if(this._val2 != null && value < this._val1)
+        value = this._val1;
+      if(value > this._max)
+        value = this._max;
+      if(value < this._min)
+        value = this._min;
+      this._val2 = value;
+      $(this).trigger("changed");
+    }
+  });
+
+  result.Value1 = Value1;
+  result.Value2 = Value2;
+
   return result;
 }
 
-export function Slider_Attach(element) {
-  $(element).html("\
-    <div class='double_slider__wrapper'>\
-      <div class='double_slider__container'>\
-        <div class='double_slider__left'></div>\
-        <div class='double_slider__middle'></div>\
-        <div class='double_slider__right'></div>\
-      </div>\
-    </div>\
-    ").find(".double_slider__left").on("mousedown", function (e) {
-      alert($(element).prop("className"));
-    });
+/* CONTROLLER in MVC */
+export function Slider_Controller(element) {
+  var dragging = false;
+  var StartPointX, StartPointY;
+
+  element = $(element);
+  var e = element.find(".double_slider__left");
+  e.on("mousedown", function (e) {
+    dragging = true;
+    StartPointX = e.pageX;
+    StartPointY = e.pageY;
+  });
+  $(window).on("mousemove", function (e) {
+    if(!dragging)
+      return;
+    var DeltaX = StartPointX - e.pageX;
+    var DeltaY = StartPointY - e.pageY;
+  });
+  $(window).on("mouseup", function (e) {
+    dragging = false;
+  });
 }
 
-export function Slider(model, step_or_array = null) {
+/* VIEWs in MVC */
+export function Slider_Attach(element) {
+  element = $(element)
+  var model = element.prop("model");
+
+  element.empty();
+  var html = "<div class='double_slider__wrapper'>"+
+      "<div class='double_slider__container'>" +
+        ((model.Value1 != null)?
+        "<div class='double_slider__left'></div>" : "") +
+        "<div class='double_slider__middle'></div>" +
+        ((model.Value2 != null)?
+        "<div class='double_slider__right'></div>": "") +
+      "</div></div>";
+  element.html(html);
+  Slider_Controller(element);
+}
+
+export function Slider(minimumValue, maximumValue, Value1 = null, Value2 = null) {
+  if(Value1 == null && Value2 == null)
+    Value1 = (minimumValue + maximumValue) / 2;
+
+
+  var model = Slider_CreateModel(minimumValue, maximumValue, Value1, Value2);
   $(this).each(function () {
-    $(this).model = model;
-    $(this).step_or_array = step_or_array;
+    $(this).prop("model", model);
+    $(this).prop("config", {
+      orientation: 'landscape',
+      show_value: '',
+    });
     Slider_Attach($(this));
   });
   return this;
@@ -82,6 +155,3 @@ export function Slider(model, step_or_array = null) {
 
 $.fn.mySlider = Slider;
 
-$(window).on("load", function () {
-  $(".super_slider").mySlider();
-});
