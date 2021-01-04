@@ -102,22 +102,33 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
   return Object.create(result);
 }
 
-function Slider_GetRange(element) {
+export function Slider_GetRange(element, vertical) {
   var left = element.find(".double_slider__left");
   var right = element.find(".double_slider__right");
 
-  var Range = element.width();// Расчет доступного пространства для перемещения ползунков
+  if(vertical) {
+    var Range = element.height();// Расчет доступного пространства для перемещения ползунков
 
-  if(left.width() != null)
-    Range -= left.width(); // Исключаем ширину самих ползунков если они есть
-  if(right.width() != null)
-    Range -= right.width();// Исключаем ширину самих ползунков если они есть
+    if(left.height() != null)
+      Range -= left.height(); // Исключаем высоту самих ползунков если они есть
+    if(right.height() != null)
+      Range -= right.height();// Исключаем высоту самих ползунков если они есть
 
-  return Range;
+    return Range;
+  } else {
+    var Range = element.width();// Расчет доступного пространства для перемещения ползунков
+
+    if(left.width() != null)
+      Range -= left.width(); // Исключаем ширину самих ползунков если они есть
+    if(right.width() != null)
+      Range -= right.width();// Исключаем ширину самих ползунков если они есть
+
+    return Range;
+  }
 }
 
 /* CONTROLLER in MVC */
-export function Slider_Controller(element) {
+export function Slider_Controller(element, vertical = false) {
   var dragging = 0;// 0 не таскаем, -1 таскаем левый, 1 таскаем правый
   var StartPointX, StartPointY;
   var OldValue;
@@ -128,93 +139,135 @@ export function Slider_Controller(element) {
   var left = element.find(".double_slider__left");
   var right = element.find(".double_slider__right");
 
-  var Range = Slider_GetRange(element);
+  left.on("touchstart mousedown", function (e) {
 
-  left.on("mousedown", function (e) {
     dragging = -1;
-    StartPointX = e.pageX;
-    StartPointY = e.pageY;
+    if (e.type == "touchstart") {
+      if(e.originalEvent.touches.length > 1)
+        return;
+      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+      StartPointX = touch.pageX;
+      StartPointY = touch.pageY;
+    } else {
+      StartPointX = e.pageX;
+      StartPointY = e.pageY;
+    }
     OldValue = model.Value1;//Фиксируем начальные значения и координаты для перетакивания левого ползунка
+    e.stopPropagation();
+    e.preventDefault();
   });
-  right.on("mousedown", function (e) {
+  right.on("touchstart mousedown", function (e) {
     dragging = 1;
-    StartPointX = e.pageX;
-    StartPointY = e.pageY;
+    if (e.type == "touchstart") {
+      if(e.originalEvent.touches.length > 1)
+        return;
+      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+      StartPointX = touch.pageX;
+      StartPointY = touch.pageY;
+    } else {
+      StartPointX = e.pageX;
+      StartPointY = e.pageY;
+    }
     OldValue = model.Value2;//Фиксируем начальные значения и координаты для перетакивания правого ползунка
+    e.stopPropagation();
+    e.preventDefault();
   });
-  $(window).on("mousemove", function (e) {
+  $(window).on("touchmove mousemove", function (e) {
     if(!dragging)
       return;
-    var DeltaX = e.pageX - StartPointX;
-    //var DeltaY = e.pageY - StartPointY;
+    var DeltaX, DeltaY;
+    if (e.type == "touchmove") {
+      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+      DeltaX = touch.pageX - StartPointX;
+      DeltaY = touch.pageY - StartPointY;
+    } else {
+      DeltaX = e.pageX - StartPointX;
+      DeltaY = e.pageY - StartPointY;
+    }
+    var Range = Slider_GetRange(element, vertical);
     if(dragging < 0) { //Перетаскивание левого
-      model.Value1 = OldValue + DeltaX / Range;
+      model.Value1 = OldValue + ((vertical)?DeltaY:DeltaX) / Range;
     }
     if(dragging > 0) { //Перетаскивание правого
-      model.Value2 = OldValue + DeltaX / Range;
+      model.Value2 = OldValue + ((vertical)?DeltaY:DeltaX) / Range;
     }
+    e.stopPropagation();
+    e.preventDefault();
   });
-  $(window).on("mouseup", function (e) {
+  $(window).on("touchend touchcancel mouseup", function (e) {
     dragging = 0;
   });
 }
 
 /* VIEWs in MVC */
-export function Slider_Attach(element) {
-  element = $(element)
-  var model = element.prop("model");
-
-  element.empty();
-  var html = "<div class='double_slider__wrapper'>"+
-      "<div class='double_slider__container'>" +
-        ((model.Value1 != null)?
-        "<div class='double_slider__left'></div>" : "") +
-        "<div class='double_slider__middle'></div>" +
-        ((model.Value2 != null)?
-        "<div class='double_slider__right'></div>": "") +
-      "</div></div>";
-  element.html(html);
-
-
-  //Перемещение ползунков при изменении модели
-  $(model).on("changed", function () {
-    var left = element.find(".double_slider__left");
-    var middle = element.find(".double_slider__middle");
-
-    var Range = Slider_GetRange(element);
-
-    var left_margin = Range * model.Value1 / model.Range;
-
-    var right_margin = model.Value2;
-    if(model.Value1 != null)
-      right_margin -= model.Value1;
-
-    right_margin *= Range / model.Range;
-
-    left.css("margin-left", left_margin + "px");
-    middle.css("width", right_margin + "px");
-//    left.animate({"margin-left": left_margin}, { duration: 'fast', queue: false });
-//    middle.animate({"width": right_margin}, { duration: 'fast', queue: false });
-  })
-
-  Slider_Controller(element);
-}
-
-export function Slider(model) {
+export function Slider_Vertical(model, vertical = true) {
   if(model == null)
     model = Slider_CreateModel(0, 1, 0, 1);
 
   $(this).each(function () {
-    $(this).prop("model", model);
-    $(this).prop("config", {
+    var element = $(this);
+    element.prop("model", model);
+    element.prop("config", {
       orientation: 'landscape',
       show_value: '',
     });
-    Slider_Attach($(this));
+
+
+    element.empty();
+    var orientation = ((vertical)?"vertical":"horizontal");
+    var html = 
+      `<div class='double_slider__wrapper'>\
+        <div class='double_slider__container double_slider__container_${orientation}'>\
+        <div class='double_slider__spacer_left'></div>\
+        ${(model.Value1 != null) ?
+          "<div class='double_slider__left'></div>" : ""}\
+        <div class='double_slider__spacer_middle double_slider__spacer_middle_${orientation}'></div>\
+        ${(model.Value2 != null) ?
+          "<div class='double_slider__right'></div>" : ""}\
+        <div class='double_slider__spacer_right'></div></div></div>`;
+    element.html(html);
+
+    //Перемещение ползунков при изменении модели
+    var changed = function () {
+      var left = element.find(".double_slider__spacer_left");
+      var middle = element.find(".double_slider__spacer_middle");
+      var right = element.find(".double_slider__spacer_right");
+
+      if(model.Value1 == null && model.Value2 != null) {
+        left.css("flex-grow", null);
+        left.css("flex-shrink", null);
+        middle.css("flex-grow", model.Value2);
+        middle.css("flex-shrink", model.Value2);
+        right.css("flex-grow", model.Range - model.Value2);
+        right.css("flex-shrink", model.Range - model.Value2);
+      }
+      if(model.Value1 != null && model.Value2 != null) {
+        left.css("flex-grow", model.Value1);
+        left.css("flex-shrink", model.Value1);
+        middle.css("flex-grow", model.Value2 - model.Value1);
+        middle.css("flex-shrink", model.Value2 - model.Value1);
+        right.css("flex-grow", model.Range - model.Value2);
+        right.css("flex-shrink", model.Range - model.Value2);
+      }
+      if(model.Value1 != null && model.Value2 == null) {
+        left.css("flex-grow", model.Value1);
+        left.css("flex-shrink", model.Value1);
+        middle.css("flex-grow", model.Range - model.Value1);
+        middle.css("flex-shrink", model.Range - model.Value1);
+        right.css("flex-grow", null);
+        right.css("flex-shrink", null);
+      }
+  //    left.animate({"margin-left": left_margin}, { duration: 'fast', queue: false });
+  //    middle.animate({"width": right_margin}, { duration: 'fast', queue: false });
+    }
+    $(model).on("changed", changed);
+    changed();
+    
+    Slider_Controller(element, vertical);
   });
   return this;
 }
 
-$.fn.mySlider = Slider;
+$.fn.mySlider = Slider_Vertical;
 $.fn.mySliderModel = Slider_CreateModel;
 

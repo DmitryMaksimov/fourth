@@ -5,49 +5,64 @@
     -moz-user-select: none;
     -webkit-user-select: none;
     -ms-user-select: none;
-  }
+}
+
+.double_slider__wrapper {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.double_slider__container {
+  @include unselectable;
+  display: flex;
+  flex-wrap: nowrap;
   
-  .double_slider__wrapper {
-    margin-top: 15px;
-    margin-bottom: 15px;
-  }
+  align-items: center;
+  justify-content: stretch;
+
+  background: #FFFFFF;
+  /* Dark 25% */
   
-  .double_slider__container {
-    @include unselectable;
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: flex-start;
-  
-    background: #FFFFFF;
-    /* Dark 25% */
-    
-    height: 6px;
-  
-    border: 1px solid rgba(31, 32, 65, 0.25);
-    box-sizing: border-box;
-    border-radius: 3px;
-  }
-  
-  .double_slider__left {
-    width: 12px;
-    height:12px;
-    background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
-    border: 2px solid #FFFFFF;
-    border-radius: 10px;
-  }
-  
-  .double_slider__middle {
-    height: 6px;
-    width: 0px;
-    background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
-  }
-  
-  .double_slider__right {
-    width: 12px;
-    height:12px;
-    background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
-    border: 2px solid #FFFFFF;
-    border-radius: 10px;
-  }
-  
+  border: 1px solid rgba(31, 32, 65, 0.25);
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+
+.double_slider__container_horizontal {
+  height: 6px;
+}
+
+.double_slider__container_vertical {
+  flex-direction: column;
+
+  width: 6px;
+  height: 100%;
+}
+
+.double_slider__spacer_left,
+.double_slider__spacer_right {
+}
+
+//Стили для шариков
+.double_slider__left, .double_slider__right {
+  width: 12px;
+  height:12px;
+  background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
+  border: 2px solid #FFFFFF;
+  border-radius: 10px;
+}
+
+//Основной стиль для центрального спейсера (можно не использовать)
+.double_slider__spacer_middle {
+  background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
+}
+
+//Стиль центрадбного спейсера для вертикальной версии
+.double_slider__spacer_middle_vertical {
+  width: 6px;
+}
+
+//Стиль центрадбного спейсера для горизонтальной версии
+.double_slider__spacer_middle_horizontal {
+  height: 6px;
+}

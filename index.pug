@@ -21,14 +21,21 @@ html
 
     script.
       $(window).on("load", function () {
-        $(".super_slider").mySlider();
+        var model = $(window).mySliderModel(0, 1, 0.25, 0.75);
+        $("#s1").mySlider(model, true);
+        $("#s2").mySlider(model, false);
+        model = $(window).mySliderModel(0, 1, 0, 1);
+        $("#s3").mySlider(model, true);
+        $("#s4").mySlider(model, false);
       });
 
 
 
   body
     content
-      div.super_slider
-      div.super_slider
+      div(style="height: 100px; padding-left: 50px")#s1
+      div#s2
+      div(style="height: 100px; padding-left: 50px")#s3
+      div#s4
       div#mocha
       script mocha.run()
