@@ -1,25 +1,11 @@
 /* Double slider */
-
-@mixin unselectable {
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-}
-
 .double_slider__wrapper {
   margin-top: 15px;
   margin-bottom: 15px;
 }
 
-.double_slider__container {
-  @include unselectable;
-  display: flex;
-  flex-wrap: nowrap;
-  
-  align-items: center;
-  justify-content: stretch;
-
+.double_slider__container_horizontal,
+.double_slider__container_vertical {
   background: #FFFFFF;
   /* Dark 25% */
   
@@ -33,8 +19,6 @@
 }
 
 .double_slider__container_vertical {
-  flex-direction: column;
-
   width: 6px;
   height: 100%;
 }
@@ -53,7 +37,8 @@
 }
 
 //Основной стиль для центрального спейсера (можно не использовать)
-.double_slider__spacer_middle {
+.double_slider__spacer_middle_vertical,
+.double_slider__spacer_middle_horizontal {
   background: linear-gradient(180deg, #6FCF97 0%, #66D2EA 100%);
 }
 
@@ -65,4 +50,63 @@
 //Стиль центрадбного спейсера для горизонтальной версии
 .double_slider__spacer_middle_horizontal {
   height: 6px;
+}
+
+
+/* Custom slider */
+.custom__wrapper {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.custom__container_horizontal,
+.custom__container_vertical {
+  background: skyblue;
+  
+  border: 1px solid lightblue;
+  box-sizing: border-box;
+
+  border-radius: 3px;
+}
+
+.custom__container_horizontal {
+  height: 18px;
+}
+
+.custom__container_vertical {
+  width: 18px;
+  height: 100%;
+}
+
+.custom__spacer_left,
+.custom__spacer_right {
+}
+
+//Стили для шариков
+.custom__left, .custom__right {
+  width: 12px;
+  height:12px;
+  background: radial-gradient(white 0%, red 100%);
+  border: 3px solid red;
+  border-radius: 3px;
+}
+
+.custom__left {
+  width: 118px;
+}
+
+//Основной стиль для центрального спейсера (можно не использовать)
+.custom__spacer_middle_vertical,
+.custom__spacer_middle_horizontal {
+  background-color: pink;
+}
+
+//Стиль центрадбного спейсера для вертикальной версии
+.custom__spacer_middle_vertical {
+  width: 18px;
+}
+
+//Стиль центрадбного спейсера для горизонтальной версии
+.custom__spacer_middle_horizontal {
+  height: 18px;
 }

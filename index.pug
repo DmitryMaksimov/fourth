@@ -21,21 +21,63 @@ html
 
     script.
       $(window).on("load", function () {
-        var model = $(window).mySliderModel(0, 1, 0.25, 0.75);
-        $("#s1").mySlider(model, true);
-        $("#s2").mySlider(model, false);
-        model = $(window).mySliderModel(0, 1, 0, 1);
-        $("#s3").mySlider(model, true);
-        $("#s4").mySlider(model, false);
+
+        model1 = $().mySliderModel(0, 10, 2.5, 7.5);
+        model2 = $().mySliderModel(0, 10, 0, 10, 0.5);
+        model3 = $().mySliderModel(0, 10, 5);
+        model4 = $().mySliderModel(0, 10, null, 5);
+
+        $("#s1").mySlider(model1, true);
+        $("#s2").mySlider(model2, false);
+
+        $("#s3").mySlider(model2, true, "custom");
+        $("#s4").mySlider(model1, false, "custom");
+
+        $("#s5").mySlider(model3, true, "custom");
+        $("#s6").mySlider(model4, false, "custom");
+
+        $("#s7").mySlider(model4, true, "custom");
+        $("#s8").mySlider(model3, false, "custom");
+
+        $("#l1").mySliderLabel(model1, null);
+        $("#l2").mySliderLabel(model1, true);
+        $("#l3").mySliderLabel(model1, false);
+        $("#l4").mySliderLabel(model3, null);
+        $("#l5").mySliderLabel(model3, false);
+        $("#l6").mySliderLabel(model4, null);
+        $("#l7").mySliderLabel(model4, false);
+        $("#l8").mySliderLabel(model1, null, new Intl.NumberFormat('ru-RU', {style: 'currency', currency: "RUB"}));
+
+        $(model1).on("changed", function () {$("#t1").prop('checked', true)});
       });
 
 
 
   body
     content
-      div(style="height: 100px; padding-left: 50px")#s1
-      div#s2
-      div(style="height: 100px; padding-left: 50px")#s3
-      div#s4
+      div(style="display: flex")
+        div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s1
+        div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s3
+        div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s5
+        div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s7
+      div
+        div#s2
+        div#s4
+        div#s6
+        div#s8
+      div
+        div#l1
+        div#l2
+        div#l3
+        div#l4
+        div#l5
+        div#l6
+        div#l7
+        div#l8
+      div
+        input#t1(type="checkbox")
+
+      input#m1_step(onkeypress="$(window).prop('model2').Step=this.value")
+
       div#mocha
       script mocha.run()

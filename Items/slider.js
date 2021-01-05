@@ -5,10 +5,35 @@ if( window.$ == null) {
   require("jquery-ui-dist/jquery-ui.js");
 }
 
+var h_container_style = "\
+  user-select: none;\
+  -moz-user-select: none;\
+  -webkit-user-select: none;\
+  -ms-user-select: none;\
+  \
+  display: flex;\
+  flex-wrap: nowrap;\
+  align-items: center;\
+  justify-content: stretch;\
+";
+
+var v_container_style = "\
+  user-select: none;\
+  -moz-user-select: none;\
+  -webkit-user-select: none;\
+  -ms-user-select: none;\
+  \
+  display: flex;\
+  flex-wrap: nowrap;\
+  flex-direction: column;\
+  align-items: center;\
+  justify-content: stretch;\
+";
+
 /* MODEL in MVC*/
 
 //Создание модели + создание событий при изменении модели
-export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Value2 = null) {
+export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Value2 = null, stepValue = null) {
   if( isNaN(minimumValue) ||
       isNaN(maximumValue) ||
       minimumValue > maximumValue ||
@@ -24,8 +49,8 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
     _max: maximumValue,
     _val1: null,
     _val2: null,
-    salt: Math.random(),
-    setMinMax: function (minimumValue, maximumValue) { 
+    _step: stepValue,
+    setMinMax: function (minimumValue, maximumValue, stepValue = null) { 
       if(isNaN(minimumValue) || isNaN(maximumValue) || minimumValue > maximumValue)
         throw new Error("Давай нормальные данные");
       this._min = minimumValue;
@@ -33,16 +58,16 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
 
       if(this._val1 != null) {
         if(this._val1 < minimumValue)
-          this._val1 = minimumValue;
+          this.Value1 = minimumValue;
         if(this._val1 > maximumValue)
-          this._val1 = maximumValue;
+          this.Value1 = maximumValue;
       }
 
       if(this._val2 != null) {
         if(this._val2 < minimumValue)
-          this._val2 = minimumValue;
+          this.Value2 = minimumValue;
         if(this._val2 > maximumValue)
-          this._val2 = maximumValue;
+          this.Value2 = maximumValue;
       }
 
       $(this).trigger("changed");
@@ -50,6 +75,24 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
       return this;
     }
   };
+
+  Object.defineProperty(result, "Step", {
+    get: function() { return this._step; },
+    set: function(value) {
+      value = Number(value);
+      if(isNaN(value))
+        value = null;
+      if(value == 0)
+        value = null;
+      console.log(value);
+      this._step = value;
+
+      var t = this.Value2;
+      this.Value2 = null;
+      this.Value1 = this._val1;
+      this.Value2 = t;
+    },
+  });
 
   Object.defineProperty(result, "Value1", {
     get: function() { return this._val1; },
@@ -60,7 +103,12 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
         return;
       }
       if(isNaN(value))
-        throw new Error("Цифры давай! Модель требует циферки!");
+        throw new Error(`Цифры давай! Модель требует циферки! (${value})`);
+
+      if(this._step != null) 
+        if(value < this._max)
+          value = Math.round((value - this._min) / this._step) * this._step + this._min;
+
       if(this._val2 != null && value > this._val2)
         value = this._val2;
       if(value > this._max)
@@ -81,7 +129,12 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
       }
 
       if(isNaN(value))
-        throw new Error("Цифры давай! Модель требует циферки!");
+        throw new Error(`Цифры давай! Модель требует циферки! (${value})`);
+
+      if(this._step != null) 
+        if(value < this._max)
+          value = Math.round((value - this._min) / this._step) * this._step + this._min;
+
       if(this._val2 != null && value < this._val1)
         value = this._val1;
       if(value > this._max)
@@ -102,42 +155,44 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
   return Object.create(result);
 }
 
-export function Slider_GetRange(element, vertical) {
-  var left = element.find(".double_slider__left");
-  var right = element.find(".double_slider__right");
+/* Функция вычисляет свободное пространство для ползунков*/
+export function Slider_GetRange(element, vertical, prefix) {
+  var left = element.find(`.${prefix}__left`);
+  var right = element.find(`.${prefix}__right`);
+
+  element = element.find(`.${prefix}__container_${(vertical)?"vertical":"horizontal"}`);
 
   if(vertical) {
     var Range = element.height();// Расчет доступного пространства для перемещения ползунков
 
-    if(left.height() != null)
-      Range -= left.height(); // Исключаем высоту самих ползунков если они есть
-    if(right.height() != null)
-      Range -= right.height();// Исключаем высоту самих ползунков если они есть
+    if(left.outerHeight(true) != null)
+      Range -= left.outerHeight(true); // Исключаем высоту самих ползунков если они есть
+    if(right.outerHeight(true) != null)
+      Range -= right.outerHeight(true);// Исключаем высоту самих ползунков если они есть
 
     return Range;
   } else {
     var Range = element.width();// Расчет доступного пространства для перемещения ползунков
 
-    if(left.width() != null)
-      Range -= left.width(); // Исключаем ширину самих ползунков если они есть
-    if(right.width() != null)
-      Range -= right.width();// Исключаем ширину самих ползунков если они есть
+    if(left.outerWidth(true) != null)
+      Range -= left.outerWidth(true); // Исключаем ширину самих ползунков если они есть
+    if(right.outerWidth(true) != null)
+      Range -= right.outerWidth(true);// Исключаем ширину самих ползунков если они есть
 
     return Range;
   }
 }
 
 /* CONTROLLER in MVC */
-export function Slider_Controller(element, vertical = false) {
+export function Slider_Controller(model, element, vertical, prefix) {
   var dragging = 0;// 0 не таскаем, -1 таскаем левый, 1 таскаем правый
   var StartPointX, StartPointY;
   var OldValue;
 
   element = $(element);
-  var model = element.prop("model");
 
-  var left = element.find(".double_slider__left");
-  var right = element.find(".double_slider__right");
+  var left = element.find(`.${prefix}__left`);
+  var right = element.find(`.${prefix}__right`);
 
   left.on("touchstart mousedown", function (e) {
 
@@ -184,12 +239,12 @@ export function Slider_Controller(element, vertical = false) {
       DeltaX = e.pageX - StartPointX;
       DeltaY = e.pageY - StartPointY;
     }
-    var Range = Slider_GetRange(element, vertical);
+    var Range = Slider_GetRange(element, vertical, prefix);
     if(dragging < 0) { //Перетаскивание левого
-      model.Value1 = OldValue + ((vertical)?DeltaY:DeltaX) / Range;
+      model.Value1 = OldValue + model.Range * ((vertical)?DeltaY:DeltaX) / Range;
     }
     if(dragging > 0) { //Перетаскивание правого
-      model.Value2 = OldValue + ((vertical)?DeltaY:DeltaX) / Range;
+      model.Value2 = OldValue + model.Range * ((vertical)?DeltaY:DeltaX) / Range;
     }
     e.stopPropagation();
     e.preventDefault();
@@ -200,38 +255,37 @@ export function Slider_Controller(element, vertical = false) {
 }
 
 /* VIEWs in MVC */
-export function Slider_Vertical(model, vertical = true) {
+export function Slider(model, vertical = true, prefix = "double_slider") {
+
   if(model == null)
     model = Slider_CreateModel(0, 1, 0, 1);
 
+  var orientation = (vertical)?"vertical":"horizontal";
+
   $(this).each(function () {
     var element = $(this);
-    element.prop("model", model);
-    element.prop("config", {
-      orientation: 'landscape',
-      show_value: '',
-    });
-
+    element.prop("double_slider__model", model);
+    element.prop("double_slider__prefix", prefix);
+    element.prop("double_slider__orientation", orientation);
 
     element.empty();
-    var orientation = ((vertical)?"vertical":"horizontal");
     var html = 
-      `<div class='double_slider__wrapper'>\
-        <div class='double_slider__container double_slider__container_${orientation}'>\
-        <div class='double_slider__spacer_left'></div>\
+      `<div class='${prefix}__wrapper'>\
+        <div class='${prefix}__container_${orientation}' style='${(vertical)?v_container_style:h_container_style}'>\
+        <div class='${prefix}__spacer_left'></div>\
         ${(model.Value1 != null) ?
-          "<div class='double_slider__left'></div>" : ""}\
-        <div class='double_slider__spacer_middle double_slider__spacer_middle_${orientation}'></div>\
+          `<div class='${prefix}__left'></div>` : ``}\
+        <div class='${prefix}__spacer_middle_${orientation}'></div>\
         ${(model.Value2 != null) ?
-          "<div class='double_slider__right'></div>" : ""}\
-        <div class='double_slider__spacer_right'></div></div></div>`;
+          `<div class='${prefix}__right'></div>` : ``}\
+        <div class='${prefix}__spacer_right'></div></div></div>`;
     element.html(html);
 
     //Перемещение ползунков при изменении модели
     var changed = function () {
-      var left = element.find(".double_slider__spacer_left");
-      var middle = element.find(".double_slider__spacer_middle");
-      var right = element.find(".double_slider__spacer_right");
+      var left = element.find(`.${prefix}__spacer_left`);
+      var middle = element.find(`.${prefix}__spacer_middle_${orientation}`);
+      var right = element.find(`.${prefix}__spacer_right`);
 
       if(model.Value1 == null && model.Value2 != null) {
         left.css("flex-grow", null);
@@ -263,11 +317,45 @@ export function Slider_Vertical(model, vertical = true) {
     $(model).on("changed", changed);
     changed();
     
-    Slider_Controller(element, vertical);
+    Slider_Controller(model, element, vertical, prefix);
   });
   return this;
 }
 
-$.fn.mySlider = Slider_Vertical;
+export function Slider_Label(model, left_or_right = null, IntlNF) {
+  if(IntlNF == null)
+    IntlNF = {
+      format: function (value) {return value;},
+    };
+  $(this).each(function () {
+    var element = $(this);
+
+    var changed = function () {
+      element.text("");
+
+      //Рисуем только значение 2 в случае если это указано явно или у нас нет значения 1 и явно не запрещено рисовать значение 2
+      if( model.Value1 == null && model.Value2 != null && (left_or_right == null || !left_or_right) ||
+          model.Value2 != null && left_or_right != null && !left_or_right)
+        element.text(IntlNF.format(model.Value2));
+
+      //Рисуем только значение 1 в случае если это указано явно или у нас нет значения 2 и явно не запрещено рисовать значение 1
+      if( model.Value2 == null && model.Value1 != null && (left_or_right == null || left_or_right) ||
+          model.Value1 != null && left_or_right != null && left_or_right)
+        element.text(IntlNF.format(model.Value1));
+
+      //Рисуем оба значения если это на запрещено и есть оба значения
+      if( model.Value1 != null && model.Value2 != null && left_or_right == null)
+        element.text(IntlNF.format(model.Value1) + " - " + IntlNF.format(model.Value2));
+    }
+    $(model).on("changed", changed);
+
+    changed();
+
+  });
+  return this;
+}
+
+$.fn.mySlider = Slider;
+$.fn.mySliderLabel = Slider_Label;
 $.fn.mySliderModel = Slider_CreateModel;
 
