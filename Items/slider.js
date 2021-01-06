@@ -30,6 +30,16 @@ var v_container_style = "\
   justify-content: stretch;\
 ";
 
+function GetPointFromEvent(e) {
+  if(e.type in ["touchstart", "touchmove", "touchend"]) {
+    if(e.originalEvent.touches.length > 1)
+      return null;
+    var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+    return {pageX: touch.pageX, pageY: touch.pageY};
+  }
+  return {pageX: e.pageX, pageY: e.pageY};
+}
+
 /* MODEL in MVC*/
 
 //Создание модели + создание событий при изменении модели
@@ -135,7 +145,7 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
         if(value < this._max)
           value = Math.round((value - this._min) / this._step) * this._step + this._min;
 
-      if(this._val2 != null && value < this._val1)
+      if(this._val1 != null && value < this._val1)
         value = this._val1;
       if(value > this._max)
         value = this._max;
@@ -147,6 +157,12 @@ export function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Va
   });
   Object.defineProperty(result, "Range", {
     get: function() { return this._max - this._min; },
+  });
+  Object.defineProperty(result, "Range1", {
+    get: function() { return (this._val2 == null)?this.Range:(this._val2 - this._min); },
+  });
+  Object.defineProperty(result, "Range2", {
+    get: function() { return (this._val1 == null)?this.Range:(this._max - this._val1); },
   });
 
   result.Value1 = Value1;
@@ -186,6 +202,7 @@ export function Slider_GetRange(element, vertical, prefix) {
 /* CONTROLLER in MVC */
 export function Slider_Controller(model, element, vertical, prefix) {
   var dragging = 0;// 0 не таскаем, -1 таскаем левый, 1 таскаем правый
+  var last_active = 0;// 0 никто, -1 левый, 1 правый
   var StartPointX, StartPointY;
   var OldValue;
 
@@ -193,36 +210,84 @@ export function Slider_Controller(model, element, vertical, prefix) {
 
   var left = element.find(`.${prefix}__left`);
   var right = element.find(`.${prefix}__right`);
+  var container = element.find(`.${prefix}__container_${(vertical)?"vertical":"horizontal"}`);
 
-  left.on("touchstart mousedown", function (e) {
+  container.on("touchstart mousedown", function (e) {
+    var Point = GetPointFromEvent(e);// Получаем позицию курсора на странице
+    if(!Point)// Если ошибка - нафиг
+      return;
 
-    dragging = -1;
-    if (e.type == "touchstart") {
-      if(e.originalEvent.touches.length > 1)
-        return;
-      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-      StartPointX = touch.pageX;
-      StartPointY = touch.pageY;
+    var lpos = left.position(); //Получаем позиции левого
+    var rpos = right.position(); // и правого ползунков
+
+    // Если нет одного из ползунков, то противополжный становится активным
+    if(lpos == null)
+      last_active = 1;
+    if(rpos == null)
+      last_active = -1;
+
+    if(vertical) {
+      if(lpos != null && Point.pageX <= lpos.left)
+        last_active = -1;// Переназначаем активный ползунок, если мышь выше от верхнего, то верхний
+      if(rpos != null && Point.pageX >= rpos.left)
+        last_active = 1;// Переназначаем активный ползунок, если мышь ниже от нижнего, то нижний
+      if(!last_active) { // Так и не определились кто активный :(
+        var l = lpos.top + left.outerHeight();// Учтем высоту верхнего
+        last_active = (Point.pageY <= (l + rpos.top) / 2)? -1: 1; //Куда ближе, тот и тащим
+      } //Нахера всё так сложно? А вдруг последний активный уже был известен, тогда он переопределился бы только в явных случаях
+  
+      if(last_active < 0) { // Тащим верхний?
+        var cpl = container.position().top;
+        var range_px = ((rpos == null)?container.height():(rpos.top - cpl)) - left.outerHeight();
+        model.Value1 = model.Range1 * (Point.pageY - cpl - left.outerHeight()/2) / range_px + model._min;
+      } else { // Тащим правый
+        var cpr = container.position().top + container.height();
+        var range_px = ((lpos == null)?container.height():(cpr - lpos.top - left.outerHeight())) - right.outerHeight();
+        model.Value2 = model._max - model.Range2 * (cpr - Point.pageY - right.outerHeight()/2) / range_px;
+      }
     } else {
-      StartPointX = e.pageX;
-      StartPointY = e.pageY;
+      if(lpos != null && Point.pageX <= lpos.left)
+        last_active = -1;// Переназначаем активный ползунок, если мышь слева от левого, то левый
+      if(rpos != null && Point.pageX >= rpos.left)
+        last_active = 1;// Переназначаем активный ползунок, если мышь справа от правого, то правый
+      if(!last_active) { // Так и не определились кто активный :(
+        var l = lpos.left + left.outerWidth();// Учтем ширину левого
+        last_active = (Point.pageX <= (l + rpos.left) / 2)? -1: 1; //Куда ближе, тот и тащим
+      } //Нахера всё так сложно? А вдруг последний активный уже был известен, тогда он переопределился бы только в явных случаях
+
+      if(last_active < 0) { // Тащим левый?
+        var cpl = container.position().left;
+        var range_px = ((rpos == null)?container.width():(rpos.left - cpl)) - left.outerWidth();
+        model.Value1 = model.Range1 * (Point.pageX - cpl - left.outerWidth()/2) / range_px + model._min;
+      } else { // Тащим правый
+        var cpr = container.position().left + container.width();
+        var range_px = ((lpos == null)?container.width():(cpr - lpos.left - left.outerWidth())) - right.outerWidth();
+        model.Value2 = model._max - model.Range2 * (cpr - Point.pageX - right.outerWidth()/2) / range_px;
+      }
     }
+  });
+  left.on("touchstart mousedown", function (e) {
+    var Point = GetPointFromEvent(e);
+    if(!Point)
+      return;
+    dragging = -1;
+    last_active = dragging;
+    StartPointX = Point.pageX;
+    StartPointY = Point.pageY;
+
     OldValue = model.Value1;//Фиксируем начальные значения и координаты для перетакивания левого ползунка
     e.stopPropagation();
     e.preventDefault();
   });
   right.on("touchstart mousedown", function (e) {
+    var Point = GetPointFromEvent(e);
+    if(!Point)
+      return;
     dragging = 1;
-    if (e.type == "touchstart") {
-      if(e.originalEvent.touches.length > 1)
-        return;
-      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-      StartPointX = touch.pageX;
-      StartPointY = touch.pageY;
-    } else {
-      StartPointX = e.pageX;
-      StartPointY = e.pageY;
-    }
+    last_active = dragging;
+    StartPointX = Point.pageX;
+    StartPointY = Point.pageY;
+
     OldValue = model.Value2;//Фиксируем начальные значения и координаты для перетакивания правого ползунка
     e.stopPropagation();
     e.preventDefault();
@@ -230,16 +295,16 @@ export function Slider_Controller(model, element, vertical, prefix) {
   $(window).on("touchmove mousemove", function (e) {
     if(!dragging)
       return;
-    var DeltaX, DeltaY;
-    if (e.type == "touchmove") {
-      var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-      DeltaX = touch.pageX - StartPointX;
-      DeltaY = touch.pageY - StartPointY;
-    } else {
-      DeltaX = e.pageX - StartPointX;
-      DeltaY = e.pageY - StartPointY;
+    var Point = GetPointFromEvent(e);
+    if(!Point) {
+      dragging = 0;
+      return;
     }
+    var DeltaX = Point.pageX - StartPointX;
+    var DeltaY = Point.pageY - StartPointY;
+
     var Range = Slider_GetRange(element, vertical, prefix);
+
     if(dragging < 0) { //Перетаскивание левого
       model.Value1 = OldValue + model.Range * ((vertical)?DeltaY:DeltaX) / Range;
     }
