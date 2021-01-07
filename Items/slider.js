@@ -202,9 +202,9 @@
         last_active = -1;
 
       if(vertical) {
-        if(lpos != null && Point.pageX <= lpos.left)
+        if(lpos != null && Point.pageY <= lpos.top)
           last_active = -1;// Переназначаем активный ползунок, если мышь выше от верхнего, то верхний
-        if(rpos != null && Point.pageX >= rpos.left)
+        if(rpos != null && Point.pageY >= rpos.top)
           last_active = 1;// Переназначаем активный ползунок, если мышь ниже от нижнего, то нижний
         if(!last_active) { // Так и не определились кто активный :(
           var l = lpos.top + left.outerHeight();// Учтем высоту верхнего
@@ -316,7 +316,7 @@
     return this.each(function () {
       var element = $(this);
       var data = element.data("dmx_Slider");
-      if(!data && !data.model)
+      if(!data || !data.model)
         return;
 
       var model = data.model;
@@ -412,7 +412,7 @@
   var methods = {
     init : function () { 
       methods.set_new_model.apply(this, [0, 1]);
-      methods.slider.apply(this);
+      methods.slider.apply(this, arguments);
     },
     set_model : function (model) {
       return $(this).each( function () {
@@ -437,15 +437,39 @@
       return methods.set_model.apply(this, [methods.new_model(minimumValue, maximumValue, Value1, Value2, stepValue)]);
     },
     get_model : function () {
-      var model = null;
+      var model = new Array();
       $(this).each(function () {
         var data = $(this).data("dmx_Slider");
         if(!data || !data.model)
           return;
-        model = data.model;
-        return false;
+        model[model.length] = data.model;
       })
-      return model;
+      return $(model);
+    },
+    value : function () { // Тоже что и value1
+      return methods.value1.apply(this, arguments);
+    },
+    value1 : function () {
+      var model = methods.get_model.apply(this);
+      return model[0].Value1;
+    },
+    value2 : function () {
+      var model = methods.get_model.apply(this);
+      return model[0].Value2;
+    },
+    min : function () {
+      var model = methods.get_model.apply(this);
+      return model[0].Min;
+    },
+    max : function () {
+      var model = methods.get_model.apply(this);
+      return model[0].Max;
+    },
+    minimum : function () { // Тоже что и min
+      return methods.min.apply(this, arguments);
+    },
+    maximum : function () { // Тоже что и max
+      return methods.max.apply(this, arguments);
     },
     label : Slider_Label,
     slider : Slider,
@@ -455,10 +479,11 @@
     // логика вызова метода
     if ( methods[method] ) {
       return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
-    } else if ( typeof method === 'object' || ! method ) {
+    } else
+//     if ( typeof method === 'object' || ! method ) {
       return methods.init.apply( this, arguments );
-    } else {
-      throw 'Метод с именем ' +  method + ' не существует для jQuery.dmx_Slider';
-    } 
+//    } else {
+//     throw 'Метод с именем ' +  method + ' не существует для jQuery.dmx_Slider';
+//    } 
   };
 })(require("jquery"))

@@ -59,8 +59,29 @@ describe("Slider_Model", function() {
         var data = div.data("dmx_Slider");
         assert(data.model);
       });
-      it("get_model returns model", function() {
-        assert.equal(div.dmx_Slider("get_model"), div.data("dmx_Slider").model);
+      it("get_model returns object.length == 1", function() {
+        assert(div.dmx_Slider("get_model").length == 1);
+      });
+      it("value == 3", function() {
+        assert.equal(div.dmx_Slider("value"), 3);
+      });
+      it("value1 == 3", function() {
+        assert.equal(div.dmx_Slider("value1"), 3);
+      });
+      it("value2 == 3", function() {
+        assert.equal(div.dmx_Slider("value2"), 3);
+      });
+      it("min == 1", function() {
+        assert.equal(div.dmx_Slider("min"), 1);
+      });
+      it("max == 3", function() {
+        assert.equal(div.dmx_Slider("max"), 3);
+      });
+      it("minimum == 1", function() {
+        assert.equal(div.dmx_Slider("minimum"), 1);
+      });
+      it("maximum == 3", function() {
+        assert.equal(div.dmx_Slider("maximum"), 3);
       });
     })
 })

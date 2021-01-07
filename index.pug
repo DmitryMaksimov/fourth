@@ -22,39 +22,27 @@ html
     script.
       $(window).on("load", function () {
 
-        
         $("#s2, #s4, #l1, #l2, #l3, #l8").dmx_Slider("set_new_model", 10, 100, 30, 70, 10);//модель1
         $("#s3").dmx_Slider("set_new_model", 100, 200, 100, 200).dmx_Slider("slider", true, "custom");//модель2 
         $("#s5, #s8, #l4, #l5").dmx_Slider("set_new_model", 0, 100, 10);//модель3
         $("#s6, #s7, #l6, #l7").dmx_Slider("set_new_model", 0, 100, null, 10);//модель4  
 
-        $("#s1").dmx_Slider("slider", true);
+        $("#s1").dmx_Slider(true);
         $("#s2").dmx_Slider("slider", false);
         $("#s3, #s5, #s7").dmx_Slider("slider", true, "custom");
         $("#s4, #s6, #s8").dmx_Slider("slider", false, "custom");
 
         $("#l1").dmx_Slider("label");
         $("#l2").dmx_Slider("label", true);
+        $("#l1, #l4, #l6").dmx_Slider("label", null);
+        $("#l2").dmx_Slider("label", true);
+        $("#l3, #l5, #l7").dmx_Slider("label", false);
 
-        model1 = $().mySliderModel(0, 10, 2.5, 7.5);
-        model2 = $().mySliderModel(0, 10, 0, 10, 0.5);
-        model3 = $().mySliderModel(0, 10, 5);
-        model4 = $().mySliderModel(0, 10, null, 5);
+        $("#l8").dmx_Slider("label", null, new Intl.NumberFormat('ru-RU', {style: 'currency', currency: "RUB"}));
 
-        $("#s2").mySlider(model1, false);
+        $("#s2").dmx_Slider("get_model").on("changed", function () {$("#t1").prop('checked', true)});
 
-
-
-        $("#l1").mySliderLabel(model1, null);
-        $("#l2").mySliderLabel(model1, true);
-        $("#l3").mySliderLabel(model1, false);
-        $("#l4").mySliderLabel(model3, null);
-        $("#l5").mySliderLabel(model3, false);
-        $("#l6").mySliderLabel(model4, null);
-        $("#l7").mySliderLabel(model4, false);
-        $("#l8").mySliderLabel(model1, null, new Intl.NumberFormat('ru-RU', {style: 'currency', currency: "RUB"}));
-
-        $(model1).on("changed", function () {$("#t1").prop('checked', true)});
+        console.log($("#s2").dmx_Slider("value2"));
       });
 
 
