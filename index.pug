@@ -22,22 +22,28 @@ html
     script.
       $(window).on("load", function () {
 
+        
+        $("#s2, #s4, #l1, #l2, #l3, #l8").dmx_Slider("set_new_model", 10, 100, 30, 70, 10);//модель1
+        $("#s3").dmx_Slider("set_new_model", 100, 200, 100, 200).dmx_Slider("slider", true, "custom");//модель2 
+        $("#s5, #s8, #l4, #l5").dmx_Slider("set_new_model", 0, 100, 10);//модель3
+        $("#s6, #s7, #l6, #l7").dmx_Slider("set_new_model", 0, 100, null, 10);//модель4  
+
+        $("#s1").dmx_Slider("slider", true);
+        $("#s2").dmx_Slider("slider", false);
+        $("#s3, #s5, #s7").dmx_Slider("slider", true, "custom");
+        $("#s4, #s6, #s8").dmx_Slider("slider", false, "custom");
+
+        $("#l1").dmx_Slider("label");
+        $("#l2").dmx_Slider("label", true);
+
         model1 = $().mySliderModel(0, 10, 2.5, 7.5);
         model2 = $().mySliderModel(0, 10, 0, 10, 0.5);
         model3 = $().mySliderModel(0, 10, 5);
         model4 = $().mySliderModel(0, 10, null, 5);
 
-        $("#s1").mySlider(model1, true);
         $("#s2").mySlider(model1, false);
 
-        $("#s3").mySlider(model2, true, "custom");
-        $("#s4").mySlider(model1, false, "custom");
 
-        $("#s5").mySlider(model3, true, "custom");
-        $("#s6").mySlider(model4, false, "custom");
-
-        $("#s7").mySlider(model4, true, "custom");
-        $("#s8").mySlider(model3, false, "custom");
 
         $("#l1").mySliderLabel(model1, null);
         $("#l2").mySliderLabel(model1, true);
