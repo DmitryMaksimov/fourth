@@ -9,7 +9,7 @@
     display: flex;\
     flex-wrap: nowrap;\
     align-items: center;\
-    justify-content: stretch;\
+    flex-grow: 1;\
   ";
 
   var v_container_style = "\
@@ -22,7 +22,6 @@
     flex-wrap: nowrap;\
     flex-direction: column;\
     align-items: center;\
-    justify-content: stretch;\
   ";
 
   function GetPointFromEvent(e) {
@@ -55,7 +54,9 @@
       _val1: null,
       _val2: null,
       _step: stepValue,
-      setMinMax: function (minimumValue, maximumValue, stepValue = null) { 
+      setMinMax: function (minimumValue, maximumValue) { 
+        minimumValue = Number(minimumValue);
+        maximumValue = Number(maximumValue);
         if(isNaN(minimumValue) || isNaN(maximumValue) || minimumValue > maximumValue)
           throw new Error("Давай нормальные данные");
         this._min = minimumValue;
@@ -106,6 +107,7 @@
           $(this).trigger("changed");
           return;
         }
+        value = Number(value);
         if(isNaN(value))
           throw new Error(`Цифры давай! Модель требует циферки! (${value})`);
 
@@ -131,6 +133,7 @@
           $(this).trigger("changed");
           return;
         }
+        value = Number(value);
 
         if(isNaN(value))
           throw new Error(`Цифры давай! Модель требует циферки! (${value})`);
@@ -160,11 +163,11 @@
     });
     Object.defineProperty(result, "Min", {
       get: function() { return this._min; },
-      set: function(value) { this.setMinMax(value, this._max, this._step); },
+      set: function(value) { this.setMinMax(value, this._max); },
     });
     Object.defineProperty(result, "Max", {
       get: function() { return this._max; },
-      set: function(value) { this.setMinMax(this._min, value, this._step); },
+      set: function(value) { this.setMinMax(this._min, value); },
     });
 
     result.Value1 = Value1;
@@ -322,8 +325,9 @@
       var model = data.model;
   
       element.empty();
+      element.css("display","flex");
       var html = 
-        `<div class='${prefix}__wrapper'>\
+        `<div class='${prefix}__wrapper' style="display: flex; flex-grow: 1">\
           <div class='${prefix}__container_${orientation}' style='${(vertical)?v_container_style:h_container_style}'>\
           <div class='${prefix}__spacer_left'></div>\
           ${(model.Value1 != null) ?
@@ -343,10 +347,12 @@
         if(model.Value1 == null && model.Value2 != null) {
           left.css("flex-grow", null);
           left.css("flex-shrink", null);
-          middle.css("flex-grow", model.Value2);
-          middle.css("flex-shrink", model.Value2);
-          right.css("flex-grow", model.Range - model.Value2);
-          right.css("flex-shrink", model.Range - model.Value2);
+          middle.css("flex-grow", model.Value2 - model.Min);
+          middle.css("flex-shrink", model.Value2 - model.Min);
+          right.css("flex-grow", model.Max - model.Value2);
+          right.css("flex-shrink", model.Max - model.Value2);
+
+          element.prop("value", model.Value2);
         }
         if(model.Value1 != null && model.Value2 != null) {
           left.css("flex-grow", model.Value1 - model.Min);
@@ -355,6 +361,8 @@
           middle.css("flex-shrink", model.Value2 - model.Value1);
           right.css("flex-grow", model.Max - model.Value2);
           right.css("flex-shrink", model.Max - model.Value2);
+
+          element.prop("value", model.Value1);
         }
         if(model.Value1 != null && model.Value2 == null) {
           left.css("flex-grow", model.Value1 - model.Min);
@@ -363,7 +371,14 @@
           middle.css("flex-shrink", model.Max - model.Value1);
           right.css("flex-grow", null);
           right.css("flex-shrink", null);
+
+          element.prop("value", model.Value1);
         }
+        element.prop("value1", model.Value1);
+        element.prop("value2", model.Value2);
+
+        element.prop("min", model.Min);
+        element.prop("max", model.Max);
       }
       $(model).on("changed", changed);
       changed();
@@ -446,8 +461,12 @@
       })
       return $(model);
     },
-    value : function () { // Тоже что и value1
-      return methods.value1.apply(this, arguments);
+    value : function () {
+      var model = methods.get_model.apply(this);
+      if(model[0].Value1 == null)
+        return model[0].Value2;
+      else
+        return model[0].Value1;
     },
     value1 : function () {
       var model = methods.get_model.apply(this);

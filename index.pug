@@ -42,13 +42,77 @@ html
 
         $("#s2").dmx_Slider("get_model").on("changed", function () {$("#t1").prop('checked', true)});
 
-        console.log($("#s2").dmx_Slider("value2"));
+        $(m1_step).on('propertychange input', function () {
+          $('#s8').dmx_Slider('get_model')[0].Step=this.value;
+        })
+
+        
       });
 
+    style.
+      .parameters {
+        text-align: right;
+      }
+      .parameters input {
+        margin: 5px;
+      }
 
 
   body
     content
+      mixin test(num, minimum = "null", maximum = "null", value1 = "null", value2 = "null", step = "null")
+        script.
+          $(window).on("load", function () {
+            $("#slider!{num}, #slider!{num}_2, #label!{num}").dmx_Slider("set_new_model", !{minimum}, !{maximum}, !{value1}, !{value2}, !{step});
+            $(slider!{num}).dmx_Slider("slider", true);//модель1 
+            $(slider!{num}_2).dmx_Slider("slider", false, "custom");//модель1
+            $(label!{num}).dmx_Slider("label", null, new Intl.NumberFormat('ru-RU', {style: 'currency', currency: "RUB"}));
+
+            var changed = function () {
+              model!{num}_minimum.value = this.Min;
+              model!{num}_maximum.value = this.Max;
+              model!{num}_step.value = this.Step;
+              model!{num}_value1.value = this.Value1;
+              model!{num}_value2.value = this.Value2;
+            };
+
+            $(slider!{num}).dmx_Slider("get_model").on("changed", changed);
+            changed.apply($(slider!{num}).dmx_Slider("get_model")[0])
+          });
+        div(style="display: flex; border: solid gray 2px; border-radius: 10px; padding: 20px; margin: 20px")
+          div(style="width: 20px; text-orientation: mixed; writing-mode: vertical-rl; text-align: center ") Модель № !{num}
+          div(style="width: 20px")
+
+          //Сам слайдер
+          div(id="slider"+num style="height: 200px")
+
+          div(style="width: 50px")
+          div.parameters
+            p
+              label(for='model'+num+'_minimum') Минимум 
+                input(id='model'+num+'_minimum')
+                input(type="button", value="Установить", onclick="$(slider"+num+").dmx_Slider('get_model')[0].Min = model"+num+"_minimum.value")
+            p
+              label(for="model"+num+"_maximum") Максимум
+                input(id="model"+num+"_maximum")
+                input(type="button", value="Установить", onclick="$(slider"+num+").dmx_Slider('get_model')[0].Max = model"+num+"_maximum.value")
+            p
+              label(for="model"+num+"_step") Шаг
+                input(id="model"+num+"_step")
+                input(type="button", value="Установить", onclick="$(slider"+num+").dmx_Slider('get_model')[0].Step = model"+num+"_step.value")
+            p
+              label(for="model"+num+"_value1") Значение1
+                input(id="model"+num+"_value1")
+                input(type="button", value="Установить", onclick="$(slider"+num+").dmx_Slider('get_model')[0].Value1 = model"+num+"_value1.value")
+            p
+              label(for="model"+num+"_value2") Значение2
+                input(id="model"+num+"_value2")
+                input(type="button", value="Установить", onclick="$(slider"+num+").dmx_Slider('get_model')[0].Value2 = model"+num+"_value2.value")
+            div(id="slider"+num+"_2")
+            div(id="label"+num)
+      +test(1, 0, 100, 20, 80)
+      +test(2, 100, 1000, "null", 80)
+      +test(3, -100, 100, 20, "null")
       div(style="display: flex")
         div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s1
         div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s3
@@ -70,8 +134,9 @@ html
         div#l8
       div
         input#t1(type="checkbox")
+        label(for="t1") Изменение модели №1
 
-      input#m1_step(onkeypress="$(window).prop('model2').Step=this.value")
+      input#m1_step(onchange="$('#s8').dmx_Slider('get_model')[0].Step=this.value")
 
       div#mocha
       script mocha.run()
