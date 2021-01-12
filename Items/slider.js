@@ -36,7 +36,7 @@
 
   /* MODEL in MVC*/
 
-  //Создание модели + создание событий при изменении модели
+  //Функция создания модели + создание событий при изменении модели
   function Slider_CreateModel(minimumValue, maximumValue, Value1 = null, Value2 = null, stepValue = null) {
     if( isNaN(minimumValue) ||
         isNaN(maximumValue) ||
@@ -102,7 +102,7 @@
     Object.defineProperty(result, "Value1", {
       get: function() { return this._val1; },
       set: function(value) {
-        if(value == null) {
+        if(value == null || value == '') {
           this._val1 = null;
           $(this).trigger("changed");
           return;
@@ -128,7 +128,7 @@
     Object.defineProperty(result, "Value2", {
       get: function() { return this._val2; },
       set: function(value) {
-        if(value == null) {
+        if(value == null || value == '') {
           this._val2 = null;
           $(this).trigger("changed");
           return;
@@ -199,34 +199,34 @@
       var rpos = right.position(); // и правого ползунков
 
       // Если нет одного из ползунков, то противополжный становится активным
-      if(lpos == null)
+      if(model.Value1 == null)
         last_active = 1;
-      if(rpos == null)
+      if(model.Value2 == null)
         last_active = -1;
 
       if(vertical) {
-        if(lpos != null && Point.pageY <= lpos.top)
+        if(model.Value1 != null && Point.pageY <= lpos.top)
           last_active = -1;// Переназначаем активный ползунок, если мышь выше от верхнего, то верхний
-        if(rpos != null && Point.pageY >= rpos.top)
+        if(model.Value2 != null && Point.pageY >= rpos.top)
           last_active = 1;// Переназначаем активный ползунок, если мышь ниже от нижнего, то нижний
-        if(!last_active) { // Так и не определились кто активный :(
+        if(!last_active) { // Так и не определились кто активный :( , но знаем что оба есть!
           var l = lpos.top + left.outerHeight();// Учтем высоту верхнего
           last_active = (Point.pageY <= (l + rpos.top) / 2)? -1: 1; //Куда ближе, тот и тащим
         } //Нахера всё так сложно? А вдруг последний активный уже был известен, тогда он переопределился бы только в явных случаях
     
         if(last_active < 0) { // Тащим верхний?
           var cpl = container.position().top;// Берем крайний верхний пиксель
-          var range_px = ((rpos == null)?container.height():(rpos.top - cpl)) - left.outerHeight(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая нижний ползунок (он нам мешает тоже)
+          var range_px = ((model.Value2 == null)?container.height():(rpos.top - cpl)) - left.outerHeight(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая нижний ползунок (он нам мешает тоже)
           model.Value1 = model.Range1 * (Point.pageY - cpl - left.outerHeight()/2) / range_px + model._min;// Переносим отношение клика от верхнего края к свободному пространству на модель
         } else { // Тащим правый
           var cpr = container.position().top + container.height();// Берем крайний нижний пиксель
-          var range_px = ((lpos == null)?container.height():(cpr - lpos.top - left.outerHeight())) - right.outerHeight();//Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая верхний ползунок (он нам мешает тоже)
+          var range_px = ((model.Value1 == null)?container.height():(cpr - lpos.top - left.outerHeight())) - right.outerHeight();//Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая верхний ползунок (он нам мешает тоже)
           model.Value2 = model._max - model.Range2 * (cpr - Point.pageY - right.outerHeight()/2) / range_px;// Переносим отношение клика от нижнего края к свободному пространству на модель
         }
       } else {
-        if(lpos != null && Point.pageX <= lpos.left)
+        if(model.Value1 != null && Point.pageX <= lpos.left)
           last_active = -1;// Переназначаем активный ползунок, если мышь слева от левого, то левый
-        if(rpos != null && Point.pageX >= rpos.left)
+        if(model.Value2 != null && Point.pageX >= rpos.left)
           last_active = 1;// Переназначаем активный ползунок, если мышь справа от правого, то правый
         if(!last_active) { // Так и не определились кто активный :(
           var l = lpos.left + left.outerWidth();// Учтем ширину левого
@@ -235,11 +235,11 @@
 
         if(last_active < 0) { // Тащим левый
           var cpl = container.position().left;// Берем крайний левый пиксель
-          var range_px = ((rpos == null)?container.width():(rpos.left - cpl)) - left.outerWidth(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая правый ползунок (он нам мешает тоже)
+          var range_px = ((model.Value2 == null)?container.width():(rpos.left - cpl)) - left.outerWidth(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая правый ползунок (он нам мешает тоже)
           model.Value1 = model.Range1 * (Point.pageX - cpl - left.outerWidth()/2) / range_px + model._min;// Переносим отношение клика от левого края к свободному пространству на модель
         } else { // Тащим правый
           var cpr = container.position().left + container.width();// Берем крайний правый пиксель
-          var range_px = ((lpos == null)?container.width():(cpr - lpos.left - left.outerWidth())) - right.outerWidth(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая левый ползунок (он нам мешает тоже)
+          var range_px = ((model.Value1 == null)?container.width():(cpr - lpos.left - left.outerWidth())) - right.outerWidth(); //Считаем всё свободное пространство для ползунка исключая сам ползунок и учитывая левый ползунок (он нам мешает тоже)
           model.Value2 = model._max - model.Range2 * (cpr - Point.pageX - right.outerWidth()/2) / range_px;// Переносим отношение клика от правого края к свободному пространству на модель
         }
       }
@@ -285,16 +285,16 @@
       if(vertical) {
         Range = container.height();// Расчет доступного пространства для перемещения ползунков
   
-        if(left.outerHeight(true) != null)
+        if(model.Value1 != null)
           Range -= left.outerHeight(true); // Исключаем высоту самих ползунков если они есть
-        if(right.outerHeight(true) != null)
+        if(model.Value2 != null)
           Range -= right.outerHeight(true);// Исключаем высоту самих ползунков если они есть
       } else {
         Range = container.width();// Расчет доступного пространства для перемещения ползунков
   
-        if(left.outerWidth(true) != null)
+        if(model.Value1 != null)
           Range -= left.outerWidth(true); // Исключаем ширину самих ползунков если они есть
-        if(right.outerWidth(true) != null)
+        if(model.Value2 != null)
           Range -= right.outerWidth(true);// Исключаем ширину самих ползунков если они есть
       }
 
@@ -330,11 +330,9 @@
         `<div class='${prefix}__wrapper' style="display: flex; flex-grow: 1">\
           <div class='${prefix}__container_${orientation}' style='${(vertical)?v_container_style:h_container_style}'>\
           <div class='${prefix}__spacer_left'></div>\
-          ${(model.Value1 != null) ?
-            `<div class='${prefix}__left'></div>` : ``}\
+          <div class='${prefix}__left' style=''></div>\
           <div class='${prefix}__spacer_middle_${orientation}'></div>\
-          ${(model.Value2 != null) ?
-            `<div class='${prefix}__right'></div>` : ``}\
+          <div class='${prefix}__right' style=''></div>\
           <div class='${prefix}__spacer_right'></div></div></div>`;
       element.html(html);
 
@@ -344,9 +342,28 @@
         var middle = element.find(`.${prefix}__spacer_middle_${orientation}`);
         var right = element.find(`.${prefix}__spacer_right`);
 
+        var l = element.find(`.${prefix}__left`);
+        var r = element.find(`.${prefix}__right`);
+
+        if(model.Value1 == null && model.Value2 == null) {
+          l.hide();
+          r.hide();
+          middle.hide();
+
+          left.css("flex-grow", 0);
+          left.css("flex-shrink", 0);
+          middle.css("flex-grow", 1);
+          middle.css("flex-shrink", 1);
+          right.css("flex-grow", 0);
+          right.css("flex-shrink", 0);
+        }
         if(model.Value1 == null && model.Value2 != null) {
-          left.css("flex-grow", null);
-          left.css("flex-shrink", null);
+          l.hide();
+          r.show();
+          middle.show();
+
+          left.css("flex-grow", 0);
+          left.css("flex-shrink", 0);
           middle.css("flex-grow", model.Value2 - model.Min);
           middle.css("flex-shrink", model.Value2 - model.Min);
           right.css("flex-grow", model.Max - model.Value2);
@@ -355,6 +372,10 @@
           element.prop("value", model.Value2);
         }
         if(model.Value1 != null && model.Value2 != null) {
+          l.show();
+          r.show();
+          middle.show();
+
           left.css("flex-grow", model.Value1 - model.Min);
           left.css("flex-shrink", model.Value1 - model.Min);
           middle.css("flex-grow", model.Value2 - model.Value1);
@@ -365,12 +386,15 @@
           element.prop("value", model.Value1);
         }
         if(model.Value1 != null && model.Value2 == null) {
+          l.show();
+          r.hide();
+
           left.css("flex-grow", model.Value1 - model.Min);
           left.css("flex-shrink", model.Value1 - model.Min);
           middle.css("flex-grow", model.Max - model.Value1);
           middle.css("flex-shrink", model.Max - model.Value1);
-          right.css("flex-grow", null);
-          right.css("flex-shrink", null);
+          right.css("flex-grow", 0);
+          right.css("flex-shrink", 0);
 
           element.prop("value", model.Value1);
         }
