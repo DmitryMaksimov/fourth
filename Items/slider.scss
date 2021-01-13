@@ -53,6 +53,25 @@
 }
 
 
+
+
+//Стили для шкалы
+.custom__scale_item_horizontal {
+  height: 6px;
+  width: 0px;
+  border: 0.5px solid black;
+}
+
+.custom__scale_item_vertical {
+  height: 0px;
+  width: 6px;
+  border: 0.5px solid black;
+}
+
+
+
+
+
 /* Custom slider */
 .custom__wrapper {
   margin-top: 15px;

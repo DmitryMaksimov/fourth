@@ -91,19 +91,19 @@ html
             div(style="align-self: flex-start").parameters
               p
                 label(for='model'+num+'_minimum') Минимум 
-                  input(id='model'+num+'_minimum' onkeyup="$(slider"+num+").dmx_Slider('get_model')[0].Min = this.value")
+                  input(id='model'+num+'_minimum' onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Min = model"+num+"_minimum.value}, 1000)")
               p
                 label(for="model"+num+"_maximum") Максимум
-                  input(id="model"+num+"_maximum" onkeyup="$(slider"+num+").dmx_Slider('get_model')[0].Max = this.value")
+                  input(id="model"+num+"_maximum" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Max = model"+num+"_maximum.value}, 1000)")
               p
                 label(for="model"+num+"_step") Шаг
-                  input(id="model"+num+"_step" onkeyup="$(slider"+num+").dmx_Slider('get_model')[0].Step = this.value")
+                  input(id="model"+num+"_step" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Step = model"+num+"_step.value}, 1000)")
               p
                 label(for="model"+num+"_value1") Значение1
-                  input(id="model"+num+"_value1" onkeyup="$(slider"+num+").dmx_Slider('get_model')[0].Value1 = this.value")
+                  input(id="model"+num+"_value1" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Value1 = (model"+num+"_value1.value == '')?null:model"+num+"_value1.value}, 1000)")
               p
                 label(for="model"+num+"_value2") Значение2
-                  input(id="model"+num+"_value2" onkeyup="$(slider"+num+").dmx_Slider('get_model')[0].Value2 = this.value")
+                  input(id="model"+num+"_value2" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Value2 = (model"+num+"_value2.value == '')?null:model"+num+"_value2.value}, 1000)")
             div(id="slider"+num+"_2")
             div(id="label"+num)
       +test(1, 0, 100, 20, 80)

@@ -1,28 +1,81 @@
 //24.12.2020 Начал изучение jquery
 ;(function($) {
-  var h_container_style = "\
-    user-select: none;\
-    -moz-user-select: none;\
-    -webkit-user-select: none;\
-    -ms-user-select: none;\
-    \
-    display: flex;\
-    flex-wrap: nowrap;\
-    align-items: center;\
-    flex-grow: 1;\
-  ";
 
-  var v_container_style = "\
-    user-select: none;\
-    -moz-user-select: none;\
-    -webkit-user-select: none;\
-    -ms-user-select: none;\
-    \
-    display: flex;\
-    flex-wrap: nowrap;\
-    flex-direction: column;\
-    align-items: center;\
-  ";
+
+  var styles = {
+    unselected: "\
+      user-select: none;\
+      -moz-user-select: none;\
+      -webkit-user-select: none;\
+      -ms-user-select: none;\
+    ",
+
+    slider__wrapper: function (prefix, orientation) {
+      return `class='${prefix}__wrapper' style="display: flex; flex-grow: 1; ${(orientation == "horizontal")?"flex-direction: column;":""}"`; },
+
+    slider__left_scale: function (prefix, orientation) { 
+      var style = `\
+        display: flex;\
+        position: relative;\
+        ${(orientation == "vertical")?"height: 100%;width: 100px;":"width: 100%;height: 100px;"}\
+        flex-direction: ${(orientation == "vertical")?"column":"row"}\
+      `;
+      return `class='${prefix}__left_scale_${orientation}' style="${style}"`;  },
+
+    slider__right_scale: function (prefix, orientation) { 
+      var style = `\
+        display: flex;\
+        position: relative;\
+        flex-direction: ${(orientation == "vertical")?"column":"row"}\
+      `;
+      return `class='${prefix}__right_scale_${orientation}' style="${style}"`;  },
+
+    slider__scale_item_container: function (prefix, orientation) {
+      var style = `\
+        display: flex;\
+        position: absolute;\
+        flex-direction: ${(orientation == "vertical")?"row":"column"}\
+      `;
+      return `class='${prefix}__scale_item_container_${orientation}' style="${style}"`;  },
+
+    slider__scale_item: function (prefix, orientation) {
+      var style = `\
+        transform: translate${(orientation == "vertical")?"Y":"X"}(-50%);\
+      `;
+      return `class='${prefix}__scale_item_${orientation}' style="${style}"`;  },
+
+    slider__scale_text: function (prefix, orientation) {
+      var style = `\
+        transform: translate${(orientation == "vertical")?"Y":"X"}(-50%);\
+      `;
+      return `class='${prefix}__scale_text_${orientation}' style="${style}"`;  },
+
+    slider__container: function(prefix, orientation) {
+      var style = `\
+        ${styles.unselected}\
+        display: flex;\
+        align-items: center;\
+        flex-grow: 1;\
+        flex-direction: ${(orientation == "vertical")?"column":"row"}\
+      `;
+      return `class='${prefix}__container_${orientation}' style='${style}'`;
+    },
+
+    slider__spacer_left: function (prefix, orientation) { 
+      return `class='${prefix}__spacer_left'`;  },
+
+    slider__left: function (prefix, orientation) { 
+      return `class='${prefix}__left'`;  },
+
+    slider__spacer_middle: function (prefix, orientation) { 
+      return `class='${prefix}__spacer_middle_${orientation}'`;  },
+
+    slider__right: function (prefix, orientation) { 
+      return `class='${prefix}__right'`;  },
+
+    slider__spacer_right: function (prefix, orientation) { 
+      return `class='${prefix}__spacer_right'`;  },
+};
 
   function GetPointFromEvent(e) {
     if(e.type in ["touchstart", "touchmove", "touchend"]) {
@@ -85,10 +138,7 @@
     Object.defineProperty(result, "Step", {
       get: function() { return this._step; },
       set: function(value) {
-        value = Number(value);
-        if(isNaN(value))
-          value = null;
-        if(value == 0)
+        if(value == 0 || isNaN(value) || value == "")
           value = null;
         this._step = value;
 
@@ -102,7 +152,7 @@
     Object.defineProperty(result, "Value1", {
       get: function() { return this._val1; },
       set: function(value) {
-        if(value == null || value == '') {
+        if(value == null || isNaN(value)) {
           this._val1 = null;
           $(this).trigger("changed");
           return;
@@ -128,7 +178,7 @@
     Object.defineProperty(result, "Value2", {
       get: function() { return this._val2; },
       set: function(value) {
-        if(value == null || value == '') {
+        if(value == null || isNaN(value)) {
           this._val2 = null;
           $(this).trigger("changed");
           return;
@@ -315,6 +365,8 @@
   /* VIEWs in MVC */
   function Slider(vertical = true, prefix = "double_slider") {
     var orientation = (vertical)?"vertical":"horizontal";
+    var ScaleStep = 10;
+
 
     return this.each(function () {
       var element = $(this);
@@ -323,28 +375,122 @@
         return;
 
       var model = data.model;
-  
+      var view = new Object;
+
       element.empty();
       element.css("display","flex");
       var html = 
-        `<div class='${prefix}__wrapper' style="display: flex; flex-grow: 1">\
-          <div class='${prefix}__container_${orientation}' style='${(vertical)?v_container_style:h_container_style}'>\
-          <div class='${prefix}__spacer_left'></div>\
-          <div class='${prefix}__left' style=''></div>\
-          <div class='${prefix}__spacer_middle_${orientation}'></div>\
-          <div class='${prefix}__right' style=''></div>\
-          <div class='${prefix}__spacer_right'></div></div></div>`;
+        `<div ${styles.slider__wrapper(prefix, orientation)}>\
+          <div ${styles.slider__left_scale(prefix, orientation)}></div>\
+          <div ${styles.slider__container(prefix, orientation)}>\
+            <div ${styles.slider__spacer_left(prefix, orientation)}></div>\
+            <div ${styles.slider__left(prefix, orientation)}></div>\
+            <div ${styles.slider__spacer_middle(prefix, orientation)}></div>\
+            <div ${styles.slider__right(prefix, orientation)}></div>\
+            <div ${styles.slider__spacer_right(prefix, orientation)}></div>\
+          </div>\
+          <div ${styles.slider__right_scale(prefix, orientation)}></div>\
+        </div>`;
       element.html(html);
+
+      var left = element.find(`.${prefix}__spacer_left`);
+      var middle = element.find(`.${prefix}__spacer_middle_${orientation}`);
+      var right = element.find(`.${prefix}__spacer_right`);
+
+      var l = element.find(`.${prefix}__left`);
+      var r = element.find(`.${prefix}__right`);
+
+      var scale_l = element.find(`.${prefix}__left_scale_${orientation}`);
+      var scale_r = element.find(`.${prefix}__right_scale_${orientation}`);
+
+
+      view.setScaleStep = function (ScaleStep) {
+        if(ScaleStep == null || ScaleStep == "") {
+          scale_l.hide();
+          scale_r.hide();
+        }
+        var childs_l = scale_l.find(`.${prefix}__scale_item_container_${orientation}`);
+        var childs_r = scale_r.find(`.${prefix}__scale_item_container_${orientation}`);
+
+        var checked = 0;
+        var i = 0;
+        for(i; i<= model.Range / ScaleStep; i++) {
+
+          var div;
+          if(childs_l.length <= i) {
+            div = $(`\
+              <div ${styles.slider__scale_item_container(prefix, orientation)}>\
+                <div ${styles.slider__scale_text(prefix, orientation)}></div>\
+                <div ${styles.slider__scale_item(prefix, orientation)}></div>\
+              </div>\
+            `);
+            div.appendTo(scale_l);
+            div.on("click", function () {
+              data = $(this).data("dmx_Slider");
+              data.model.Value1 = data.value;
+            });
+          } else
+            div = $(childs_l[i]);
+          
+          div.css("left", `calc((100% - ${l.outerWidth(true) + r.outerWidth(true)}px) * ${ScaleStep * i / model.Range} + ${l.outerWidth(true) / 2}px)`);
+          div.data("dmx_Slider", {value: ScaleStep * i + model.Min, model: model});
+
+          div.find(`.${prefix}__scale_text_${orientation}`).text(ScaleStep * i + model.Min);
+
+
+          if(childs_r.length <= i) {
+            div = $(`\
+              <div ${styles.slider__scale_item_container(prefix, orientation)}>\
+                <div ${styles.slider__scale_item(prefix, orientation)}></div>\
+                <div ${styles.slider__scale_text(prefix, orientation)}></div>\
+              </div>\
+            `);
+            div.appendTo(scale_r);
+            div.on("click", function () {
+              data = $(this).data("dmx_Slider");
+              data.model.Value2 = data.value;
+            });
+          } else
+            div = $(childs_r[i]);
+          
+          div.css("left", `calc((100% - ${l.outerWidth(true) + r.outerWidth(true)}px) * ${ScaleStep * i / model.Range} + ${l.outerWidth(true) + r.outerWidth(true) / 2}px)`);
+          div.data("dmx_Slider", {value: ScaleStep * i + model.Min, model: model});
+
+          div.find(`.${prefix}__scale_text_${orientation}`).text(ScaleStep * i + model.Min);
+        }
+        //Удаляем лишние (могут появится если изменить шаг на более короткий или изменить модель)
+        for(var j=i; j < childs_l.length; j++)
+          $(childs_l[j]).remove();
+        for(var j=i; j < childs_r.length; j++)
+          $(childs_r[j]).remove();
+
+        //Вычисляем высоту, обновив массив элементов
+        var childs = scale_l.find(`.${prefix}__scale_item_container_${orientation}`);
+        var max_height = 0;
+        childs.each(function () {
+          max_height = Math.max(max_height, $(this).outerHeight(true));
+        });
+        scale_l.height(max_height);
+
+        //Вычисляем высоту, обновив массив элементов
+        childs = scale_r.find(`.${prefix}__scale_item_container_${orientation}`);
+        max_height = 0;
+        childs.each(function () {
+          max_height = Math.max(max_height, $(this).outerHeight(true));
+          checked ++;
+        });
+        scale_r.height(max_height);
+        console.log(checked);
+      }
+
+      data.view = view;
+
+      element.data("dmx_Slider", data);
+
+      view.setScaleStep(10);
 
       //Перемещение ползунков при изменении модели
       var changed = function () {
-        var left = element.find(`.${prefix}__spacer_left`);
-        var middle = element.find(`.${prefix}__spacer_middle_${orientation}`);
-        var right = element.find(`.${prefix}__spacer_right`);
-
-        var l = element.find(`.${prefix}__left`);
-        var r = element.find(`.${prefix}__right`);
-
         if(model.Value1 == null && model.Value2 == null) {
           l.hide();
           r.hide();
@@ -403,7 +549,22 @@
 
         element.prop("min", model.Min);
         element.prop("max", model.Max);
-      }
+
+        scale_l.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
+          data = $(this).data("dmx_Slider");
+          if(model.Value2 < data.value)
+            $(this).hide();
+          else
+            $(this).show();
+        });
+        scale_r.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
+          data = $(this).data("dmx_Slider");
+          if(model.Value1 > data.value)
+            $(this).hide();
+          else
+            $(this).show();
+        });
+    }
       $(model).on("changed", changed);
       changed();
       
