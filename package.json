@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "build": "npx parcel build index.pug -d docs --public-url ./ --no-content-hash",
+    "test": "npx parcel index.pug"
+  },
   "devDependencies": {
     "pug": "^3.0.0",
     "sass": "^1.30.0"
