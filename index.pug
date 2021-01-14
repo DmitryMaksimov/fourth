@@ -41,11 +41,6 @@ html
 
         $("#s2").dmx_Slider("get_model").on("changed", function () {$("#t1").prop('checked', true)});
 
-        $(m1_step).on('propertychange input', function () {
-          $('#s8').dmx_Slider('get_model')[0].Step=this.value;
-        })
-
-        
       });
 
     style.
@@ -58,12 +53,12 @@ html
 
   body
     content
-      mixin test(num, minimum = "null", maximum = "null", value1 = "null", value2 = "null", step = "null")
+      mixin test(num, minimum = "null", maximum = "null", value1 = "null", value2 = "null", step = "null", scale = "0")
         script.
           $(window).on("load", function () {
             $("#slider!{num}, #slider!{num}_2, #label!{num}").dmx_Slider("set_new_model", !{minimum}, !{maximum}, !{value1}, !{value2}, !{step});
-            $(slider!{num}).dmx_Slider("slider", true);//модель1 
-            $(slider!{num}_2).dmx_Slider("slider", false, "custom");//модель1
+            $(slider!{num}).dmx_Slider("slider", true).dmx_Slider("set_scale_step", !{scale});
+            $(slider!{num}_2).dmx_Slider("slider", false, "custom").dmx_Slider("set_scale_step", !{scale});
             $(label!{num}).dmx_Slider("label", null, new Intl.NumberFormat('ru-RU', {style: 'currency', currency: "RUB"}));
 
             var changed = function () {
@@ -104,11 +99,16 @@ html
               p
                 label(for="model"+num+"_value2") Значение2
                   input(id="model"+num+"_value2" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$(slider"+num+").dmx_Slider('get_model')[0].Value2 = (model"+num+"_value2.value == '')?null:model"+num+"_value2.value}, 1000)")
+              p
+                label(for="model"+num+"_scale") Шаг шкалы
+                  input(value=scale id="model"+num+"_scale" onkeyup="clearTimeout(this.timerId); this.timerId = setTimeout(function () {$([slider"+num+", slider"+num+"_2]).dmx_Slider('set_scale_step', model"+num+"_scale.value)}, 1000)")
+            
+            //Дополнительный слайдер
             div(id="slider"+num+"_2")
             div(id="label"+num)
       +test(1, 0, 100, 20, 80)
-      +test(2, 100, 1000, "null", 80)
-      +test(3, -100, 100, 20, "null")
+      +test(2, 100, 1000, "null", 80, "null", 80)
+      +test(3, -100, 100, 20, "null", 15, 21)
       div(style="display: flex")
         div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s1
         div(style="height: 100px; padding-left: 50px; padding-right: 50px")#s3
@@ -130,9 +130,6 @@ html
         div#l8
       div
         input#t1(type="checkbox")
-        label(for="t1") Изменение модели №1
-
-      input#m1_step(onchange="$('#s8').dmx_Slider('get_model')[0].Step=this.value")
 
       div#mocha
       script mocha.run()

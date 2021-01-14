@@ -14,16 +14,16 @@
       return `class='${prefix}__wrapper' style="display: flex; flex-grow: 1; ${(orientation == "horizontal")?"flex-direction: column;":""}"`; },
 
     slider__left_scale: function (prefix, orientation) { 
-      var style = `\
+      var style = styles.unselected + `\
         display: flex;\
         position: relative;\
-        ${(orientation == "vertical")?"height: 100%;width: 100px;":"width: 100%;height: 100px;"}\
+        ${(orientation == "vertical")?"height: 100%;":"width: 100%;"}\
         flex-direction: ${(orientation == "vertical")?"column":"row"}\
       `;
       return `class='${prefix}__left_scale_${orientation}' style="${style}"`;  },
 
     slider__right_scale: function (prefix, orientation) { 
-      var style = `\
+      var style = styles.unselected + `\
         display: flex;\
         position: relative;\
         flex-direction: ${(orientation == "vertical")?"column":"row"}\
@@ -33,20 +33,21 @@
     slider__scale_item_container: function (prefix, orientation) {
       var style = `\
         display: flex;\
+        align-items: center;\
         position: absolute;\
+        transform: translate${(orientation == "vertical")?"Y":"X"}(-50%);\
         flex-direction: ${(orientation == "vertical")?"row":"column"}\
       `;
       return `class='${prefix}__scale_item_container_${orientation}' style="${style}"`;  },
 
     slider__scale_item: function (prefix, orientation) {
       var style = `\
-        transform: translate${(orientation == "vertical")?"Y":"X"}(-50%);\
       `;
       return `class='${prefix}__scale_item_${orientation}' style="${style}"`;  },
 
     slider__scale_text: function (prefix, orientation) {
       var style = `\
-        transform: translate${(orientation == "vertical")?"Y":"X"}(-50%);\
+        cursor: pointer;\
       `;
       return `class='${prefix}__scale_text_${orientation}' style="${style}"`;  },
 
@@ -142,10 +143,9 @@
           value = null;
         this._step = value;
 
-        var t = this.Value2;
-        this.Value2 = null;
         this.Value1 = this._val1;
-        this.Value2 = t;
+        this.Value2 = this._val2;
+        this.Value1 = this._val1;
       },
     });
 
@@ -364,9 +364,8 @@
 
   /* VIEWs in MVC */
   function Slider(vertical = true, prefix = "double_slider") {
-    var orientation = (vertical)?"vertical":"horizontal";
-    var ScaleStep = 10;
 
+    var orientation = (vertical)?"vertical":"horizontal";
 
     return this.each(function () {
       var element = $(this);
@@ -403,168 +402,175 @@
       var scale_l = element.find(`.${prefix}__left_scale_${orientation}`);
       var scale_r = element.find(`.${prefix}__right_scale_${orientation}`);
 
+      var old_ScaleStep = 0;
+
+      var old_model_min = model.Min;
+      var old_model_max = model.Max;
 
       view.setScaleStep = function (ScaleStep) {
-        if(ScaleStep == null || ScaleStep == "") {
-          scale_l.hide();
+        var data = element.data("dmx_Slider");
+        if(!data || !data.model)
+          return;
+
+        ScaleStep = Number(ScaleStep);
+        if(isNaN(ScaleStep))
+          ScaleStep = 0;
+
+        old_ScaleStep = ScaleStep;
+
+        function FillElements(scale, model, top, vertical) {
+          var i = 0;
+          scale.empty();
+          for(i; i<= data.model.Range / ScaleStep; i++) {
+            var div;
+            if(top)
+              div = $( `<div ${styles.slider__scale_item_container(prefix, orientation)}>\
+                          <div ${styles.slider__scale_text(prefix, orientation)}>${ScaleStep * i + model.Min}</div>\
+                          <div ${styles.slider__scale_item(prefix, orientation)}></div>\
+                        </div>`);
+            else
+              div = $( `<div ${styles.slider__scale_item_container(prefix, orientation)}>\
+                          <div ${styles.slider__scale_item(prefix, orientation)}></div>\
+                          <div ${styles.slider__scale_text(prefix, orientation)}>${ScaleStep * i + model.Min}</div>\
+                        </div>`);
+            div.appendTo(scale);
+            div.on("click", function () {
+              var data = $(this).data("dmx_Slider");
+              if(data.top)
+                data.model.Value1 = data.value;
+              else
+                data.model.Value2 = data.value;
+            });
+
+            var lw = (vertical)?l.outerHeight(true):l.outerWidth(true);
+            var rw = (vertical)?r.outerHeight(true):r.outerWidth(true);
+
+            if(model.Value1 == null)
+              lw = 0;
+
+            if(model.Value2 == null)
+              rw = 0;
+
+            if(top) {
+              div.css((vertical)?"top":"left", `calc((100% - ${lw + rw}px) * ${ScaleStep * i / model.Range} + ${lw / 2}px)`);
+              if(vertical)
+                div.css("right", "0");
+            } else
+              div.css((vertical)?"top":"left", `calc((100% - ${lw + rw}px) * ${ScaleStep * i / model.Range} + ${lw + rw / 2}px)`);
+
+            div.data("dmx_Slider", {value: ScaleStep * i + model.Min, model: model, top: top});
+
+            //Прячем недоступные элементы
+            if(top && model.Value2 != null && model.Value2 < ScaleStep * i + model.Min)
+              div.hide();
+            //Прячем недоступные элементы
+            if(!top && model.Value1 != null && ScaleStep * i + model.Min < model.Value1)
+              div.hide();
+
+          }
+          //Вычисляем высоту
+          var childs = scale.find(`.${prefix}__scale_item_container_${orientation}`);
+          var max = 0;
+          childs.each(function () {
+            if(vertical)
+              max = Math.max(max, $(this).outerWidth(true));
+            else
+              max = Math.max(max, $(this).outerHeight(true));
+          });
+          if(vertical)
+            scale.width(max);
+          else
+            scale.height(max);
+          console.log(max);
+        }
+
+        if(model.Value1 == null || ScaleStep == 0)
+          scale_l.empty().hide();
+        else {
+          scale_l.empty().show();
+          FillElements(scale_l, data.model, true, vertical);
+        }
+
+        if(model.Value2 == null || ScaleStep == 0)
           scale_r.hide();
+        else {
+          scale_r.show();
+          FillElements(scale_r, data.model, false, vertical);
         }
-        var childs_l = scale_l.find(`.${prefix}__scale_item_container_${orientation}`);
-        var childs_r = scale_r.find(`.${prefix}__scale_item_container_${orientation}`);
-
-        var checked = 0;
-        var i = 0;
-        for(i; i<= model.Range / ScaleStep; i++) {
-
-          var div;
-          if(childs_l.length <= i) {
-            div = $(`\
-              <div ${styles.slider__scale_item_container(prefix, orientation)}>\
-                <div ${styles.slider__scale_text(prefix, orientation)}></div>\
-                <div ${styles.slider__scale_item(prefix, orientation)}></div>\
-              </div>\
-            `);
-            div.appendTo(scale_l);
-            div.on("click", function () {
-              data = $(this).data("dmx_Slider");
-              data.model.Value1 = data.value;
-            });
-          } else
-            div = $(childs_l[i]);
-          
-          div.css("left", `calc((100% - ${l.outerWidth(true) + r.outerWidth(true)}px) * ${ScaleStep * i / model.Range} + ${l.outerWidth(true) / 2}px)`);
-          div.data("dmx_Slider", {value: ScaleStep * i + model.Min, model: model});
-
-          div.find(`.${prefix}__scale_text_${orientation}`).text(ScaleStep * i + model.Min);
-
-
-          if(childs_r.length <= i) {
-            div = $(`\
-              <div ${styles.slider__scale_item_container(prefix, orientation)}>\
-                <div ${styles.slider__scale_item(prefix, orientation)}></div>\
-                <div ${styles.slider__scale_text(prefix, orientation)}></div>\
-              </div>\
-            `);
-            div.appendTo(scale_r);
-            div.on("click", function () {
-              data = $(this).data("dmx_Slider");
-              data.model.Value2 = data.value;
-            });
-          } else
-            div = $(childs_r[i]);
-          
-          div.css("left", `calc((100% - ${l.outerWidth(true) + r.outerWidth(true)}px) * ${ScaleStep * i / model.Range} + ${l.outerWidth(true) + r.outerWidth(true) / 2}px)`);
-          div.data("dmx_Slider", {value: ScaleStep * i + model.Min, model: model});
-
-          div.find(`.${prefix}__scale_text_${orientation}`).text(ScaleStep * i + model.Min);
-        }
-        //Удаляем лишние (могут появится если изменить шаг на более короткий или изменить модель)
-        for(var j=i; j < childs_l.length; j++)
-          $(childs_l[j]).remove();
-        for(var j=i; j < childs_r.length; j++)
-          $(childs_r[j]).remove();
-
-        //Вычисляем высоту, обновив массив элементов
-        var childs = scale_l.find(`.${prefix}__scale_item_container_${orientation}`);
-        var max_height = 0;
-        childs.each(function () {
-          max_height = Math.max(max_height, $(this).outerHeight(true));
-        });
-        scale_l.height(max_height);
-
-        //Вычисляем высоту, обновив массив элементов
-        childs = scale_r.find(`.${prefix}__scale_item_container_${orientation}`);
-        max_height = 0;
-        childs.each(function () {
-          max_height = Math.max(max_height, $(this).outerHeight(true));
-          checked ++;
-        });
-        scale_r.height(max_height);
-        console.log(checked);
       }
 
       data.view = view;
 
       element.data("dmx_Slider", data);
 
-      view.setScaleStep(10);
-
       //Перемещение ползунков при изменении модели
       var changed = function () {
-        if(model.Value1 == null && model.Value2 == null) {
+        if(model.Value1 == null)
           l.hide();
+        else
+          l.show();
+
+        if(model.Value2 == null)
           r.hide();
+        else
+          r.show();
+
+        if(model.Value1 == null && model.Value2 == null)
           middle.hide();
-
-          left.css("flex-grow", 0);
-          left.css("flex-shrink", 0);
-          middle.css("flex-grow", 1);
-          middle.css("flex-shrink", 1);
-          right.css("flex-grow", 0);
-          right.css("flex-shrink", 0);
-        }
-        if(model.Value1 == null && model.Value2 != null) {
-          l.hide();
-          r.show();
+        else
           middle.show();
+  
+        if(model.Value1 == null)
+          left.css("flex-grow", 0).css("flex-shrink", 0);
+        else
+          left.css("flex-grow", model.Value1 - model.Min).css("flex-shrink", model.Value1 - model.Min);
 
-          left.css("flex-grow", 0);
-          left.css("flex-shrink", 0);
-          middle.css("flex-grow", model.Value2 - model.Min);
-          middle.css("flex-shrink", model.Value2 - model.Min);
-          right.css("flex-grow", model.Max - model.Value2);
-          right.css("flex-shrink", model.Max - model.Value2);
+        if(model.Value2 == null)
+          right.css("flex-grow", 0).css("flex-shrink", 0);
+        else
+          right.css("flex-grow", model.Max - model.Value2).css("flex-shrink", model.Max - model.Value2);
 
-          element.prop("value", model.Value2);
-        }
-        if(model.Value1 != null && model.Value2 != null) {
-          l.show();
-          r.show();
-          middle.show();
 
-          left.css("flex-grow", model.Value1 - model.Min);
-          left.css("flex-shrink", model.Value1 - model.Min);
-          middle.css("flex-grow", model.Value2 - model.Value1);
-          middle.css("flex-shrink", model.Value2 - model.Value1);
-          right.css("flex-grow", model.Max - model.Value2);
-          right.css("flex-shrink", model.Max - model.Value2);
+        if(model.Value1 == null && model.Value2 == null)
+          middle.css("flex-grow", 1).css("flex-shrink", 1);
+        if(model.Value1 != null && model.Value2 != null)
+          middle.css("flex-grow", model.Value2 - model.Value1).css("flex-shrink", model.Value2 - model.Value1);
+        if(model.Value1 == null && model.Value2 != null)
+          middle.css("flex-grow", model.Value2 - model.Min).css("flex-shrink", model.Value2 - model.Min);
+        if(model.Value1 != null && model.Value2 == null)
+          middle.css("flex-grow", model.Max - model.Value1).css("flex-shrink", model.Max - model.Value1);
 
-          element.prop("value", model.Value1);
-        }
-        if(model.Value1 != null && model.Value2 == null) {
-          l.show();
-          r.hide();
-
-          left.css("flex-grow", model.Value1 - model.Min);
-          left.css("flex-shrink", model.Value1 - model.Min);
-          middle.css("flex-grow", model.Max - model.Value1);
-          middle.css("flex-shrink", model.Max - model.Value1);
-          right.css("flex-grow", 0);
-          right.css("flex-shrink", 0);
-
-          element.prop("value", model.Value1);
-        }
         element.prop("value1", model.Value1);
         element.prop("value2", model.Value2);
 
         element.prop("min", model.Min);
         element.prop("max", model.Max);
 
-        scale_l.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
-          data = $(this).data("dmx_Slider");
-          if(model.Value2 < data.value)
-            $(this).hide();
-          else
-            $(this).show();
-        });
-        scale_r.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
-          data = $(this).data("dmx_Slider");
-          if(model.Value1 > data.value)
-            $(this).hide();
-          else
-            $(this).show();
-        });
-    }
+        
+        if(old_model_min != model.Min || old_model_max != model.Max) {
+          //Модель изменилась, надо подправить шкалу
+          old_model_min = model.Min;
+          old_model_max = model.Max;
+          view.setScaleStep(old_ScaleStep);
+        } else {
+          //Иначе подправим видимость засечек
+          scale_l.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
+            data = $(this).data("dmx_Slider");
+            if(model.Value2 != null && model.Value2 < data.value)
+              $(this).hide();
+            else
+              $(this).show();
+          });
+          scale_r.find(`.${prefix}__scale_item_container_${orientation}`).each(function() {
+            data = $(this).data("dmx_Slider");
+            if(model.Value1 != null && model.Value1 > data.value)
+              $(this).hide();
+            else
+              $(this).show();
+          });
+        }
+      }
+
       $(model).on("changed", changed);
       changed();
       
@@ -677,17 +683,29 @@
     },
     label : Slider_Label,
     slider : Slider,
+    set_scale_step : function (new_step) {
+      return $(this).each(function () {
+        var data = $(this).data("dmx_Slider");
+        if(!data || !data.view)
+          return;
+        data.view.setScaleStep(new_step);
+      })
+    },
   };
 
-  $.fn.dmx_Slider = function( method ) {
+  $.fn.dmx_Slider = function( method, ...theArgs ) {
+    console.log(`${method}(${theArgs.join(',')})`);
+    var result;
     // логика вызова метода
     if ( methods[method] ) {
-      return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
+      result = methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
     } else
 //     if ( typeof method === 'object' || ! method ) {
-      return methods.init.apply( this, arguments );
+        result = methods.init.apply( this, arguments );
 //    } else {
 //     throw 'Метод с именем ' +  method + ' не существует для jQuery.dmx_Slider';
 //    } 
+    console.log(result);
+    return result;
   };
 })(require("jquery"))
